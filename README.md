@@ -7,7 +7,6 @@ Zsh Vi mode Visual
 
 [Zsh Line Editer](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html) has two vi-like editing mode (*viins*, *vicmd*), but Vim has three or more major editing mode such as *insert*, *command*, *visual* and so on. Let's implement visual mode in [Zsh Line Editer](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html).
 
-***DEMO:*** 
 ![](https://raw.githubusercontent.com/b4b4r07/screenshots/master/zsh-vimode-visual/demo.gif)
 
 ## Installation
