@@ -1,98 +1,48 @@
-#!/bin/zsh -f 
-#===============================================================================
-#
-#          FILE:  zle_vi_visual.zsh
-# 
-#         USAGE:  source zle_vi_visual.zsh 
-# 
-#   DESCRIPTION: Vi VISUAL MODE for Zsh 
-# 
-#       OPTIONS:  ---
-#  REQUIREMENTS:  ---
-#          BUGS:  ---
-#         NOTES:  ---
-#        AUTHOR:  Radostan Riedel (Raybuntu), raybuntu@googlemail.com 
-#       COMPANY:  
-#       VERSION:  0.1
-#       CREATED:  01.01.2010 22:46:59 CET
-#      REVISION:  ---
-#
-#      """"Powered by VIM and ZSH""""
-#===============================================================================
-# LICENCE: GNU GPL version 3
-#
-# zle_vi_visual.zsh is free software: you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# This project is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License along
-# with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#===============================================================================
+#!/bin/zsh -f
 
-##### Xclip Fun #######################################################################################################
-#######################################################################################################################
-# The following code is from Stephane Chazelas <Stephane_Chazelas@yahoo.fr> mouse.zsh
-# http://stchaz.free.fr/mouse.zsh
+#eval '
+get-x-clipboard() {
+alias pbcopy='xsel --clipboard --input'
+alias pbpaste='xsel --clipboard --output'
 
-set-x-clipboard() { return 0; }
-get-x-clipboard() { return 1; }
+    (( $+DISPLAY )) || return 1
+    local r
+    r=$(pbpaste)
+    if [[ -n $r && $r != $CUTBUFFER ]]; then
+        killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
+        CUTBUFFER=$r
+    fi
+}
 
-if whence xclip > /dev/null 2>&1; then
-  x_clipboard_tool="xclip -sel c"
-else
-  x_clipboard_tool=
-fi
+set-x-clipboard() {
+    (( ! $+DISPLAY )) ||
+        print -rn -- "$1" | pbcopy
+}
+#'
 
-if [[ -n $x_clipboard_tool ]]; then
-  eval '
-    get-x-clipboard() {
-        (( $+DISPLAY )) || return 1
-        local r
-        r=$('$x_clipboard_tool' -o < /dev/null 2> /dev/null && print .)
-        r=${r%.}
-        if [[ -n $r && $r != $CUTBUFFER ]]; then
-            killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
-            CUTBUFFER=$r
-        fi
-    }
-
-    set-x-clipboard() {
-        (( ! $+DISPLAY )) ||
-         print -rn -- "$1" | '$x_clipboard_tool' -i 2> /dev/null
-    }
-  '
-
-  # redefine the copying widgets so that they update the clipboard.
-  for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
+# redefine the copying widgets so that they update the clipboard.
+for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
     eval '
-      '$w'() {
-        if [[ $_clipcopy == '+' ]];then
+    '$w'() {
+        #if [[ $_clipcopy == '+' ]];then
             zle .'$w'
             set-x-clipboard $CUTBUFFER
             unset _clipcopy
-        else
-            zle .'$w'
-        fi
-      }
-      zle -N '$w
-  done
-fi
+        #else
+        #    zle .'$w'
+        #fi
+    }
+    zle -N '$w
+done
 
-vi-set-buffer () { 
+vi-set-buffer () {
     read -k keys
     if [[ $keys == '+' ]];then
         _clipcopy='+'
-    else 
-        zle -U $keys  
+    else
+        zle -U $keys
         zle .vi-set-buffer
-    fi 
+    fi
 }
 zle -N vi-set-buffer
 
@@ -150,11 +100,11 @@ vi-visual-highlight () {
         __regend=$CURSOR_HL
         region_highlight=("${MARK} ${CURSOR_HL} standout")
     elif [[ $MARK -gt $CURSOR ]];then
-        (( MARK_HL = MARK + 1 )) 
+        (( MARK_HL = MARK + 1 ))
         __regstart=$CURSOR
         __regend=$MARK_HL
         region_highlight=("${CURSOR} ${MARK_HL} standout")
-    elif [[ $MARK -eq $CURSOR ]];then 
+    elif [[ $MARK -eq $CURSOR ]];then
         __regstart=$CURSOR
         __regend=$MARK
         region_highlight=("${CURSOR} ${MARK} standout")
@@ -163,7 +113,7 @@ vi-visual-highlight () {
 zle -N vi-visual-highlight
 
 # Start Vi Visual mode
-vi-visual-mode () { 
+vi-visual-mode () {
     zle -K vivis
     MARK=$CURSOR
     zle vi-visual-highlight
@@ -174,7 +124,7 @@ bindkey -M vicmd 'v' vi-visual-mode
 # Exit Vi Visual mode and go to vi-cmd-mode
 vi-visual-exit () {
     region_highlight=("0 0 standout")
-    (( CURSOR = CURSOR + 1 )) 
+    (( CURSOR = CURSOR + 1 ))
     MARK=0
     __regstart=0
     __regend=0
@@ -182,20 +132,22 @@ vi-visual-exit () {
 }
 zle -N vi-visual-exit
 bindkey -M vivis '^[' vi-visual-exit
-bindkey -M vivis 'v' vi-visual-exit
+bindkey -M vivis 'jj' vi-visual-exit
+#bindkey -M vivis 'v' vi-visual-exit
+bindkey -M vivis 'v' vi-visual-eol
 
 # Vi Visual Kill
-vi-visual-kill () { 
+vi-visual-kill () {
     if [[ $CURSOR -gt $MARK ]];then
-        (( CURSOR = CURSOR + 1 )) 
+        (( CURSOR = CURSOR + 1 ))
     elif [[ $MARK -gt $CURSOR ]];then
-        (( MARK = MARK + 1 )) 
-    elif [[ $MARK -eq $CURSOR ]];then 
+        (( MARK = MARK + 1 ))
+    elif [[ $MARK -eq $CURSOR ]];then
         zle .vi-delete-char
         return 0
     fi
 
-    zle .kill-region 
+    zle .kill-region
 }
 zle -N vi-visual-kill
 
@@ -292,7 +244,7 @@ vi-visual-substitute-lines () {
 }
 zle -N vi-visual-substitute-lines
 bindkey -M vivis 'C' vi-visual-substitute-lines
-bindkey -M vivis 'S' vi-visual-substitute-lines
+#bindkey -M vivis 'S' vi-visual-substitute-lines
 bindkey -M vivis 'R' vi-visual-substitute-lines
 
 # Vi Visual move backward-blank-word
@@ -308,7 +260,7 @@ vi-visual-forward-blank-word-end () {
     zle .vi-forward-blank-word-end
     zle vi-visual-highlight
 }
-zle -N vi-visual-forward-blank-word-end    
+zle -N vi-visual-forward-blank-word-end
 bindkey -M vivis 'E' vi-visual-forward-blank-word-end
 
 # Vi Visual move to prev char x
@@ -363,7 +315,7 @@ zle -N vi-visual-backward-word
 bindkey -M vivis 'b' vi-visual-backward-word
 
 # Vi Visual change
-vi-visual-change () { 
+vi-visual-change () {
     zle vi-visual-kill
     if [[ $_clipcopy == '+' ]];then
         set-x-clipboard $CUTBUFFER
@@ -375,7 +327,7 @@ zle -N vi-visual-change
 bindkey -M vivis 'c' vi-visual-change
 
 # Vi Visual Kill and enter vicmd
-vi-visual-kill-and-vicmd () { 
+vi-visual-kill-and-vicmd () {
     zle vi-visual-kill
     if [[ $_clipcopy == '+' ]];then
         set-x-clipboard $CUTBUFFER
@@ -404,8 +356,8 @@ zle -N vi-visual-find-next-char
 bindkey -M vivis 'f' vi-visual-find-next-char
 
 # Vi Visual move backward
-vi-visual-backward-char () { 
-    zle .vi-backward-char 
+vi-visual-backward-char () {
+    zle .vi-backward-char
     zle vi-visual-highlight
 }
 zle -N vi-visual-backward-char
@@ -413,10 +365,10 @@ bindkey -M vivis 'h' vi-visual-backward-char
 bindkey -M vivis '^?' vi-visual-backward-char
 
 # Vi Visual move down
-vi-visual-down-line () { 
+vi-visual-down-line () {
     setopt extended_glob
     local NL_CHAR NL_SUM
-        NL_CHAR=${RBUFFER//[^$'\n']/}
+    NL_CHAR=${RBUFFER//[^$'\n']/}
     if [[ $RBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
         zle .down-line-or-history
         zle vi-visual-highlight
@@ -427,29 +379,30 @@ vi-visual-down-line () {
 zle -N vi-visual-down-line
 bindkey -M vivis 'j' vi-visual-down-line
 bindkey -M vivis '+' vi-visual-down-line
-bindkey -M vivis '^M' vi-visual-down-line
+bindkey -M vivis '^M' vi-visual-yank
 
 # Vi Visual move up
-vi-visual-up-line () { 
+vi-visual-up-line () {
     setopt extended_glob
     local NL_CHAR
-        NL_CHAR=${LBUFFER//[^$'\n']/}
+    NL_CHAR=${LBUFFER//[^$'\n']/}
     if [[ $LBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
         zle .up-line-or-history
         zle vi-visual-highlight
     else
         return 1
-    fi    
+    fi
 }
 zle -N vi-visual-up-line
 bindkey -M vivis 'k' vi-visual-up-line
 #bindkey -M vivis '-' vi-visual-up-line
 
 # Vi Visual move forward
-vi-visual-forward-char () { 
-    zle .vi-forward-char 
-    zle vi-visual-highlight 
+vi-visual-forward-char () {
+    zle .vi-forward-char
+    zle vi-visual-highlight
 }
+
 zle -N vi-visual-forward-char
 bindkey -M vivis 'l' vi-visual-forward-char
 bindkey -M vivis ' ' vi-visual-forward-char
@@ -467,7 +420,7 @@ vi-visual-put () {
         unset _clipcopy
         CUTBUFFER=$cbuf
     else
-        zle -U 2 && zle .vi-set-buffer 
+        zle -U 2 && zle .vi-set-buffer
         zle .vi-put-after
     fi
 }
@@ -543,9 +496,9 @@ vi-visual-replace-region () {
     else
         read -k key
         n=$LCSTART
-        while [[ $n -le ${LCEND} ]];do 
+        while [[ $n -le ${LCEND} ]];do
             if [[ ! $BUFFER[$n] == $'\n' ]] && [[ -n $BUFFER[$n] ]];then
-                BUFFER[$n]=${key} 
+                BUFFER[$n]=${key}
             fi
             (( n++ ))
         done
@@ -565,7 +518,7 @@ zle -N vi-visual-forward-word
 bindkey -M vivis 'w' vi-visual-forward-word
 
 # Vi Visual Yank
-vi-visual-yank () { 
+vi-visual-yank () {
     if [[ $__regstart == $__regend ]];then
         zle .vi-yank
         zle vi-visual-exit
@@ -584,7 +537,7 @@ bindkey -M vivis 'y' vi-visual-yank
 bindkey -M vivis 'Y' vi-visual-yank
 
 # Vi Visual move to bol
-vi-visual-bol () { 
+vi-visual-bol () {
     zle .vi-digit-or-beginning-of-line
     zle vi-visual-highlight
 }
@@ -592,8 +545,9 @@ zle -N vi-visual-bol
 bindkey -M vivis '0' vi-visual-bol
 
 # Vi Visual move to eol
-vi-visual-eol () { 
-    zle .vi-end-of-line 
+vi-visual-eol () {
+    zle .vi-end-of-line
+    zle .vi-backward-char
     zle vi-visual-highlight
 }
 zle -N vi-visual-eol
@@ -629,10 +583,11 @@ bindkey -M vivli 'J' vi-visual-join
 bindkey -M vivli 'y' vi-visual-yank
 bindkey -M vivli 'Y' vi-visual-yank
 bindkey -M vivli '^[' vi-visual-exit
+bindkey -M vivli 'jj' vi-visual-exit
 bindkey -M vivli 'V' vi-visual-exit
 bindkey -M vivli 'c' vi-visual-substitute-lines
 bindkey -M vivli 'C' vi-visual-substitute-lines
-bindkey -M vivli 'S' vi-visual-substitute-lines
+#bindkey -M vivli 'S' vi-visual-substitute-lines
 bindkey -M vivli 'R' vi-visual-substitute-lines
 
 # Highlight Lines
@@ -734,10 +689,10 @@ zle -N vi-vlines-up-line
 bindkey -M vivli 'k' vi-vlines-up-line
 
 # Kill highlighted region in VLines
-vi-vlines-kill () { 
+vi-vlines-kill () {
     MARK=$__regend
     CURSOR=$__regstart
-    zle .kill-region 
+    zle .kill-region
     if [[ $__regstart -le 1 ]];then
         zle .kill-whole-line
     else
@@ -748,7 +703,7 @@ vi-vlines-kill () {
 zle -N vi-vlines-kill
 
 # Kill highlighted region in VLines
-vi-vlines-kill-and-vicmd () { 
+vi-vlines-kill-and-vicmd () {
     zle vi-vlines-kill
     if [[ $_clipcopy == '+' ]];then
         set-x-clipboard $CUTBUFFER
@@ -767,13 +722,14 @@ vi-vlines-exit-to-visual () {
     zle vi-visual-highlight
 }
 zle -N vi-vlines-exit-to-visual
+#bindkey -M vivli 'v' vi-vlines-exit-to-visual
 bindkey -M vivli 'v' vi-vlines-exit-to-visual
 
 # Vi VLines Put
 vi-vlines-put () {
     MARK=$__regend
     CURSOR=$__regstart
-    zle .kill-region 
+    zle .kill-region
     if [[ $_clipcopy == '+' ]];then
         local cbuf
         cbuf=$CUTBUFFER
@@ -782,7 +738,7 @@ vi-vlines-put () {
         unset _clipcopy
         CUTBUFFER=$cbuf
     else
-        zle -U 2 && zle .vi-set-buffer 
+        zle -U 2 && zle .vi-set-buffer
         zle .vi-put-after
     fi
     zle vi-visual-exit
