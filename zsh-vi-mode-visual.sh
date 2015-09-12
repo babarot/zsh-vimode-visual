@@ -884,3 +884,37 @@ vi-vlines-goto-first-line () {
 }
 zle -N vi-vlines-goto-first-line
 bindkey -M vivli 'gg' vi-vlines-goto-first-line
+
+vi-surround-dq() {
+    zle vi-visual-kill
+    BUFFER="$LBUFFER\"$CUTBUFFER\"$RBUFFER"
+    zle vi-visual-exit
+}
+
+vi-surround-sq() {
+    zle vi-visual-kill
+    BUFFER="$LBUFFER'$CUTBUFFER'$RBUFFER"
+    zle vi-visual-exit
+}
+
+vi-surround-pr() {
+    zle vi-visual-kill
+    BUFFER="$LBUFFER($CUTBUFFER)$RBUFFER"
+    zle vi-visual-exit
+}
+
+vi-surround-sp() {
+    zle vi-visual-kill
+    BUFFER="$LBUFFER $CUTBUFFER $RBUFFER"
+    zle vi-visual-exit
+}
+
+zle -N vi-surround-dq
+zle -N vi-surround-sq
+zle -N vi-surround-pr
+zle -N vi-surround-sp
+bindkey -M vivis 'S"' vi-surround-dq
+bindkey -M vivis "S'" vi-surround-sq
+bindkey -M vivis 'S(' vi-surround-pr
+bindkey -M vivis 'S)' vi-surround-pr
+bindkey -M vivis 'S ' vi-surround-sp
