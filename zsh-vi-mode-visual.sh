@@ -1,703 +1,886 @@
-
-# Set vi mode status bar
-
-# Reads until the given character has been entered.
-readuntil () {
-	typeset a
-	while [ "$a" != "$1" ]
-	do
-		read -E -k 1 a
-	done
-}
-
-# If the $SHOWMODE variable is set, displays the vi mode, specified by
-# the $VIMODE variable, under the current command line.
+#!/bin/zsh -f 
+#===============================================================================
+#
+#          FILE:  zle_vi_visual.zsh
 # 
-# Arguments:
+#         USAGE:  source zle_vi_visual.zsh 
+# 
+#   DESCRIPTION: Vi VISUAL MODE for Zsh 
+# 
+#       OPTIONS:  ---
+#  REQUIREMENTS:  ---
+#          BUGS:  ---
+#         NOTES:  ---
+#        AUTHOR:  Radostan Riedel (Raybuntu), raybuntu@googlemail.com 
+#       COMPANY:  
+#       VERSION:  0.1
+#       CREATED:  01.01.2010 22:46:59 CET
+#      REVISION:  ---
 #
-#   1 (optional): Beyond normal calculations, the number of additional
-#   lines to move down before printing the mode.  Defaults to zero.
+#      """"Powered by VIM and ZSH""""
+#===============================================================================
+# LICENCE: GNU GPL version 3
 #
-showmode() {
-    return
-	typeset movedown
-	typeset row
+# zle_vi_visual.zsh is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This project is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#===============================================================================
 
-	# Get number of lines down to print mode
-	movedown=$(($(echo "$RBUFFER" | wc -l) + ${1:-0}))
+##### Xclip Fun #######################################################################################################
+#######################################################################################################################
+# The following code is from Stephane Chazelas <Stephane_Chazelas@yahoo.fr> mouse.zsh
+# http://stchaz.free.fr/mouse.zsh
 
-	# Get current row position
-	echo -n "\e[6n"
-	row="${${$(readuntil R)#*\[}%;*}"
+set-x-clipboard() { return 0; }
+get-x-clipboard() { return 1; }
 
-	# Are we at the bottom of the terminal?
-	if [ $((row+movedown)) -gt "$LINES" ]
-	then
-		# Scroll terminal up one line
-		echo -n "\e[1S"
+if whence xclip > /dev/null 2>&1; then
+  x_clipboard_tool="xclip -sel c"
+else
+  x_clipboard_tool=
+fi
 
-		# Move cursor up one line
-		echo -n "\e[1A"
-	fi
+if [[ -n $x_clipboard_tool ]]; then
+  eval '
+    get-x-clipboard() {
+        (( $+DISPLAY )) || return 1
+        local r
+        r=$('$x_clipboard_tool' -o < /dev/null 2> /dev/null && print .)
+        r=${r%.}
+        if [[ -n $r && $r != $CUTBUFFER ]]; then
+            killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
+            CUTBUFFER=$r
+        fi
+    }
 
-	# Save cursor position
-	echo -n "\e[s"
+    set-x-clipboard() {
+        (( ! $+DISPLAY )) ||
+         print -rn -- "$1" | '$x_clipboard_tool' -i 2> /dev/null
+    }
+  '
 
-	# Move cursor to start of line $movedown lines down
-	echo -n "\e[$movedown;E"
+  # redefine the copying widgets so that they update the clipboard.
+  for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
+    eval '
+      '$w'() {
+        if [[ $_clipcopy == '+' ]];then
+            zle .'$w'
+            set-x-clipboard $CUTBUFFER
+            unset _clipcopy
+        else
+            zle .'$w'
+        fi
+      }
+      zle -N '$w
+  done
+fi
 
-	# Change font attributes
-	echo -n "\e[1m"
+vi-set-buffer () { 
+    read -k keys
+    if [[ $keys == '+' ]];then
+        _clipcopy='+'
+    else 
+        zle -U $keys  
+        zle .vi-set-buffer
+    fi 
+}
+zle -N vi-set-buffer
 
-	# Has a mode been set?
-	if [ -n "$VIMODE" ]
-	then
-		# Print mode line
-		echo -n "-- $VIMODE -- "
-	else
-		# Clear mode line
-		echo -n "\e[0K"
-	fi
+vi-put-after () {
+    if [[ $_clipcopy == '+' ]];then
+        local cbuf
+        cbuf=$CUTBUFFER
+        get-x-clipboard
+        zle .vi-put-after
+        unset _clipcopy
+        CUTBUFFER=$cbuf
+    else
+        zle .vi-put-after
+    fi
+}
+zle -N vi-put-after
 
-	# Restore font
-	echo -n "\e[0m"
+vi-put-before () {
+    if [[ $_clipcopy == '+' ]];then
+        local cbuf
+        cbuf=$CUTBUFFER
+        get-x-clipboard
+        zle .vi-put-before
+        unset _clipcopy
+        CUTBUFFER=$cbuf
+    else
+        zle .vi-put-before
+    fi
+}
+zle -N vi-put-before
 
-	# Restore cursor position
-	echo -n "\e[u"
-}
+#######################################################################################################################
+## VI VISUAL MODE #####################################################################################################
 
-clearmode() {
-	VIMODE= showmode
-}
+# create a new keymap and remap a few key's with other or new widget's
+bindkey -N vivis
+bindkey -M vivis "\"" vi-set-buffer
+bindkey -M vivis '1' digit-argument
+bindkey -M vivis '2' digit-argument
+bindkey -M vivis '3' digit-argument
+bindkey -M vivis '4' digit-argument
+bindkey -M vivis '5' digit-argument
+bindkey -M vivis '6' digit-argument
+bindkey -M vivis '7' digit-argument
+bindkey -M vivis '8' digit-argument
+bindkey -M vivis '9' digit-argument
 
-# Temporary function to extend built-in widgets to display mode.
-#
-#   1: The name of the widget.
-#
-#   2: The mode string.
-#
-#   3 (optional): Beyond normal calculations, the number of additional
-#   lines to move down before printing the mode.  Defaults to zero.
-#
-makemodal () {
-	# Create new function
-	eval "$1() { zle .'$1'; ${2:+VIMODE='$2'}; showmode $3 }"
+# Main Highlighting Widget for VISUAL Mode
+vi-visual-highlight () {
+    integer CURSOR_HL MARK_HL
 
-	# Create new widget
-	zle -N "$1"
+    if [[ $CURSOR -gt $MARK ]];then
+        (( CURSOR_HL = CURSOR + 1 ))
+        __regstart=$MARK
+        __regend=$CURSOR_HL
+        region_highlight=("${MARK} ${CURSOR_HL} standout")
+    elif [[ $MARK -gt $CURSOR ]];then
+        (( MARK_HL = MARK + 1 )) 
+        __regstart=$CURSOR
+        __regend=$MARK_HL
+        region_highlight=("${CURSOR} ${MARK_HL} standout")
+    elif [[ $MARK -eq $CURSOR ]];then 
+        __regstart=$CURSOR
+        __regend=$MARK
+        region_highlight=("${CURSOR} ${MARK} standout")
+    fi
 }
+zle -N vi-visual-highlight
 
-# Extend widgets
-makemodal vi-add-eol           INSERT
-makemodal vi-add-next          INSERT
-makemodal vi-change            INSERT
-makemodal vi-change-eol        INSERT
-makemodal vi-change-whole-line INSERT
-makemodal vi-insert            INSERT
-makemodal vi-insert-bol        INSERT
-makemodal vi-open-line-above   INSERT
-makemodal vi-substitute        INSERT
-makemodal vi-open-line-below   INSERT 1
-makemodal vi-replace           REPLACE
-makemodal vi-cmd-mode          NORMAL
+# Start Vi Visual mode
+vi-visual-mode () { 
+    zle -K vivis
+    MARK=$CURSOR
+    zle vi-visual-highlight
+}
+zle -N vi-visual-mode
+bindkey -M vicmd 'v' vi-visual-mode
 
-unfunction makemodal
+# Exit Vi Visual mode and go to vi-cmd-mode
+vi-visual-exit () {
+    region_highlight=("0 0 standout")
+    (( CURSOR = CURSOR + 1 )) 
+    MARK=0
+    __regstart=0
+    __regend=0
+    zle .vi-cmd-mode
+}
+zle -N vi-visual-exit
+bindkey -M vivis '^[' vi-visual-exit
+bindkey -M vivis 'v' vi-visual-exit
 
+# Vi Visual Kill
+vi-visual-kill () { 
+    if [[ $CURSOR -gt $MARK ]];then
+        (( CURSOR = CURSOR + 1 )) 
+    elif [[ $MARK -gt $CURSOR ]];then
+        (( MARK = MARK + 1 )) 
+    elif [[ $MARK -eq $CURSOR ]];then 
+        zle .vi-delete-char
+        return 0
+    fi
 
-#######################################################################
-#                                                                     #
-#                zsh_vim-visualmode for linux Ver 1.05                #
-#                                                                     #
-#     http://zshscreenvimvimpwget.blog27.fc2.com/blog-entry-3.html    #
-#                                                                     #
-#                          2010/05/13/19:35                           #
-#                     created by :%s#hoge#piyo#gc                     #
-#                                                                     #
-#######################################################################
-#
-#
-#
-#導入方法
-#
-#   1)
-#     このファイルの75行から最下行までをコピーして、~/.zshrcに貼付けるか
-#     このファイルを
-#     ~/somewhere/このファイルの名前
-#     のように保存して、~/.zshrcに
-#     source ~/somewhere/このファイルの名前
-#     と書き込んでください
-#
-#   2)
-#     ~/.zshrcにbindkey -vと書き込んでください
-#     こう書き込むと、zshのキーバインドがvimライクになります。
-#     もしbindkey -eと書いてある場合は、消してください。
-#
-#
-#
-#使用方法
-#
-#   vim使いの人なら、説明がなくても大体わかるでしょう。
-#   vim使いでない人は、「vim ビジュアルモード」などとググってください。
-#   私が説明するより、ネット上に多数ある優れた解説を読む方が良いでしょう。
-#
-#
-#
-#vimのビジュアルモードとの主な違い
-#
-#      ビジュアルモードでは、aiAIがいい動きをしてくれないので
-#      「コマンドモード時にaiAIを押したのと同じ動きをする」
-#      ようにしました。
-#
-#
-#
-#見つかっているバグ
-#
-#     1) shift-Vの行選択モードが変
-#      shift-Vは「行選択」ではなく、「カレント行を選択」
-#      に近いです。説明するより実際に使ってみるのがわかりやすいと思います。
-#      あと、ctrl-vの所謂短形選択は、vと同じです。短形ではありません。
-#
-#     2) 行頭の文字が選択できない
-#      行頭の文字を選択しようとしても、うまくいきません。
-#      これはZSHの機能である、'zle exchange-point-and-mark'の仕様なので、
-#      仕方ないのです。どうしても選択したければ、shift-vを押すのが良いでしょう。
-#
-#     3) 
-#      5lとか3hとかできない(一文字分しか移動しない)
-#      hとl以外の全ての機能は、数字付きで動きます。
-#
-#
-#
-#バグの報告
-#
-#     http://zshscreenvimvimpwget.blog27.fc2.com
-#     までお願いします。
-#     zsh 4.3.10 (i386-redhat-linux-gnu)
-#     での動作は確認済です。端末はgnome-terminalです。
-#     もし動かなければ、上記サイトにあるMAC-OSX用のものを使ってみてください。
-#
-#
-#
-#vim-visual-modeを実装
-#
-bindkey -a 'v' vi-v
-zle -N vi-v
-function vi-v() {
-	VI_VIS_MODE=0
-	bindkey -a 'v' vi-vis-reset
-	bindkey -a '' vi-c-v
-	bindkey -a 'V' vi-V
-	MARK=$CURSOR
-	zle vi-vis-mode
+    zle .kill-region 
 }
-#
-bindkey -a '' vi-c-v
-zle -N vi-c-v
-function vi-c-v() {
-	VI_VIS_MODE=1
-	bindkey -a 'v' vi-v
-	bindkey -a '' vi-vis-reset
-	bindkey -a 'V' vi-V
-	MARK=$CURSOR
-	zle vi-vis-mode
+zle -N vi-visual-kill
+
+# Exit Vi Visual and enter Insert mode
+vi-visual-exit-to-insert () {
+    region_highlight=("0 0 standout")
+    MARK=0
+    __regstart=0
+    __regend=0
+    zle .vi-insert
 }
-#
-bindkey -a 'V' vi-V
-zle -N vi-V
-function vi-V() {
-	VI_VIS_MODE=2
-	bindkey -a 'v' vi-v
-	bindkey -a '' vi-c-v
-	bindkey -a 'V' vi-vis-reset
-	CURSOR_V_START=$CURSOR
-	zle vi-end-of-line
-	MARK=$(($CURSOR - 1))
-	zle vi-digit-or-beginning-of-line
-	zle vi-vis-mode
+zle -N vi-visual-exit-to-insert
+
+# Exit VISUAL mode and enter VLines Mode keeping the region
+vi-visual-exit-to-vlines () {
+    zle -K vivli
+    __savepos=$CURSOR
+    zle .vi-beginning-of-line -N
+    __start2=$CURSOR
+    zle .end-of-line -N
+    __end2=$CURSOR
+    CURSOR=$MARK
+    zle .vi-beginning-of-line -N
+    __start1=$CURSOR
+    zle .end-of-line -N
+    __end1=$CURSOR
+    zle vi-vlines-highlight
 }
-#
-##########################################################
-#
-zle -N vi-vis-mode
-function vi-vis-mode() {
-	zle exchange-point-and-mark
-	VI_VIS_CURSOR_MARK=1
-#移動系コマンド
-	bindkey -a 'f' vi-vis-find
-	bindkey -a 'F' vi-vis-Find
-	bindkey -a 't' vi-vis-tskip
-	bindkey -a 'T' vi-vis-Tskip
-	bindkey -a ';' vi-vis-repeatfind
-	bindkey -a ',' vi-vis-repeatfindrev
-	bindkey -a 'w' vi-vis-word
-	bindkey -a 'W' vi-vis-Word
-	bindkey -a 'e' vi-vis-end
-	bindkey -a 'E' vi-vis-End
-	bindkey -a 'b' vi-vis-back
-	bindkey -a 'B' vi-vis-Back
-	bindkey -a 'h' vi-vis-hidari
-	bindkey -a 'l' vi-vis-leftdenai
-	bindkey -a '%' vi-vis-percent
-	bindkey -a '^' vi-vis-hat
-	bindkey -a '0' vi-vis-zero
-	bindkey -a '$' vi-vis-doller
-#削除、コピーetc
-	bindkey -a 'd' vi-vis-delete
-	bindkey -a 'D' vi-vis-Delete
-	bindkey -a 'x' vi-vis-delete
-	bindkey -a 'X' vi-vis-Delete
-	bindkey -a 'y' vi-vis-yank
-	bindkey -a 'Y' vi-vis-Yank
-	bindkey -a 'c' vi-vis-change
-	bindkey -a 'C' vi-vis-Change
-	bindkey -a 'r' vi-vis-change
-	bindkey -a 'R' vi-vis-Change
-	bindkey -a 'p' vi-vis-paste
-	bindkey -a 'P' vi-vis-Paste
-	bindkey -a 'o' vi-vis-open
-	bindkey -a 'O' vi-vis-open
-#インサートへ移行
-	bindkey -a 'a' vi-vis-add
-	bindkey -a 'A' vi-vis-Add
-	bindkey -a 'i' vi-vis-insert
-	bindkey -a 'I' vi-vis-Insert
-#その他
-	bindkey -a 'u' vi-vis-undo
-	bindkey -a '.' vi-vis-repeat
-	bindkey -a '' vi-vis-reset
-	bindkey -a 's' vi-vis-reset
-	bindkey -a 'S' vi-vis-reset
+zle -N vi-visual-exit-to-vlines
+bindkey -M vivis 'V' vi-visual-exit-to-vlines
+
+# Exit Vi Visual and open line above
+vi-visual-open-above () {
+    region_highlight=("0 0 standout")
+    MARK=0
+    zle .vi-open-line-above
 }
-#
-zle -N vi-vis-key-reset
-function vi-vis-key-reset() {
-	bindkey -M vicmd 'f' vi-find-next-char
-	bindkey -M vicmd 'F' vi-find-prev-char
-	bindkey -M vicmd 't' vi-find-next-char-skip
-	bindkey -M vicmd 'T' vi-find-prev-char-skip
-	bindkey -M vicmd ';' vi-repeat-find
-	bindkey -M vicmd ',' vi-rev-repeat-find
-	bindkey -M vicmd 'w' vi-forward-word
-	bindkey -M vicmd 'W' vi-forward-blank-word
-	bindkey -M vicmd 'e' vi-forward-word-end
-	bindkey -M vicmd 'E' vi-forward-blank-word-end
-	bindkey -M vicmd 'b' vi-backward-word
-	bindkey -M vicmd 'B' vi-backward-blank-word
-	bindkey -M vicmd 'h' vi-h-moto
-	bindkey -M vicmd 'l' vi-l-moto
-	bindkey -M vicmd '%' vi-match-bracket
-	bindkey -M vicmd '^' vi-first-non-blank
-	bindkey -M vicmd '0' vi-digit-or-beginning-of-line
-	bindkey -M vicmd '$' vi-end-of-line
-	bindkey -M vicmd 'd' vi-delete
-	bindkey -M vicmd 'D' vi-kill-eol
-	bindkey -M vicmd 'x' vi-delete-char
-	bindkey -M vicmd 'X' vi-backward-delete-char
-	bindkey -M vicmd 'y' vi-yank
-	bindkey -M vicmd 'Y' vi-yank-whole-line
-	bindkey -M vicmd 'c' vi-change
-	bindkey -M vicmd 'C' vi-change-eol
-	bindkey -M vicmd 'r' vi-replace-chars
-	bindkey -M vicmd 'R' vi-replace
-	bindkey -M vicmd 'p' vi-put-after
-	bindkey -M vicmd 'P' vi-put-before
-	bindkey -M vicmd 'o' vi-open-line-below
-	bindkey -M vicmd 'O' vi-open-line-above
-	bindkey -M vicmd 'a' vi-add-next
-	bindkey -M vicmd 'A' vi-add-eol
-	bindkey -M vicmd 'i' vi-insert
-	bindkey -M vicmd 'I' vi-insert-bol
-	bindkey -M vicmd 'u' vi-undo-change
-	bindkey -M vicmd '.' vi-repeat-change
-	bindkey -M vicmd 'v' vi-v
-	bindkey -M vicmd '' vi-c-v
-	bindkey -M vicmd 'V' vi-V
-	bindkey -M vicmd 's' vi-substitute
-	bindkey -M vicmd 'S' vi-change-whole-line 
+zle -N vi-visual-open-above
+
+# Vi Visual move to matched bracket
+vi-visual-match-bracket () {
+    zle .vi-match-bracket
+    zle vi-visual-highlight
 }
-#
-##########################################################
-#
-zle -N vi-vis-cursor-shori_before
-function vi-vis-cursor-shori_before() {
-	if [ $MARK -lt $(( $CURSOR + 1 )) ] ;then
-		VI_VIS_CURSOR_MARK=1
-	elif [ $MARK -eq $(( $CURSOR + 1 )) ] ;then 
-		VI_VIS_CURSOR_MARK=0
-	else
-		VI_VIS_CURSOR_MARK=-1
-	fi
+zle -N vi-visual-match-bracket
+bindkey -M vivis '%' vi-visual-match-bracket
+
+# Vi Visual move to column
+vi-visual-goto-column () {
+    zle .vi-goto-column
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-cursor-shori_after
-function vi-vis-cursor-shori_after() {
-	if [ $MARK -lt $(( $CURSOR + 1 )) ] ;then
-		if [ ${VI_VIS_CURSOR_MARK} -eq 1 ] ;then
-			MARK=$MARK
-			CURSOR=$CURSOR
-			VI_VIS_CURSOR_MARK=1
-		elif [ ${VI_VIS_CURSOR_MARK} -eq 0 ] ;then
-# これは起こらないはず			
-			MARK=$MARK
-			CURSOR=$CURSOR
-			VI_VIS_CURSOR_MARK=1
-		else
-			MARK=$(( $MARK - 1 ))
-			CURSOR=$CURSOR
-			VI_VIS_CURSOR_MARK=1
-		fi
-	elif [ $MARK -eq $(( $CURSOR + 1 )) ] ;then 
-		if [ ${VI_VIS_CURSOR_MARK} -eq 1 ] ;then
-			MARK=$(( $MARK + 1 ))
-			CURSOR=$(( $CURSOR - 1 ))
-			VI_VIS_CURSOR_MARK=-1
-		elif [ ${VI_VIS_CURSOR_MARK} -eq 0 ] ;then
-# これは起こらないはず			
-			MARK=$MARK
-			CURSOR=$CURSOR
-		else
-			MARK=$(( $MARK - 1 ))
-			CURSOR=$CURSOR
-			VI_VIS_CURSOR_MARK=+1
-		fi
-	else
-		if [ ${VI_VIS_CURSOR_MARK} -eq 1 ] ;then
-			MARK=$(( $MARK + 1 ))
-			CURSOR=$(( $CURSOR - 1 ))
-			VI_VIS_CURSOR_MARK=-1
-		elif [ ${VI_VIS_CURSOR_MARK} -eq 0 ] ;then
-#これは起こらないはず
-			MARK=$(( $MARK + 1 ))
-			CURSOR=$(( $CURSOR - 1 ))
-			VI_VIS_CURSOR_MARK=-1
-		else
-			MARK=$MARK
-			CURSOR=$(( $CURSOR - 1 ))
-			VI_VIS_CURSOR_MARK=-1
-		fi
-	fi
+zle -N vi-visual-goto-column
+bindkey -M vivis '\|' vi-visual-goto-column
+
+# Vi Visual move back to first non-blank char
+vi-visual-first-non-blank () {
+    zle .vi-first-non-blank
+    zle vi-visual-highlight
 }
-#
-zle -N vi-h-moto
-function vi-h-moto() {
-	CURSOR=$(( $CURSOR - 1 ))
+zle -N vi-visual-first-non-blank
+bindkey -M vivis '\^' vi-visual-first-non-blank
+
+# Vi Visual repeat find
+vi-visual-repeat-find () {
+    zle .vi-repeat-find
+    zle vi-visual-highlight
 }
-#
-zle -N vi-l-moto
-function vi-l-moto() {
-	CURSOR=$(( $CURSOR + 1 ))
+zle -N vi-visual-repeat-find
+bindkey -M vivis ';' vi-visual-repeat-find
+
+# Vi Visual reverse repeat find
+vi-visual-rev-repeat-find () {
+    zle .vi-rev-repeat-find
+    zle vi-visual-highlight
 }
-#
-##########################################################
-#
-zle -N vi-vis-find
-function vi-vis-find() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-find-next-char
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-rev-repeat-find
+bindkey -M vivis ',' vi-visual-rev-repeat-find
+
+# Vi Visual kill whole line and enter to viins
+vi-visual-substitute-lines () {
+    local EOL
+    CURSOR=$__regend
+    zle .vi-end-of-line -N
+    EOL=$CURSOR
+    CURSOR=$__regstart
+    zle .vi-first-non-blank
+    n=$CURSOR
+    while [[ $n -lt $EOL ]];do
+        zle .delete-char
+        (( n++ ))
+    done
+    zle vi-visual-exit-to-insert
 }
-#
-zle -N vi-vis-Find
-function vi-vis-Find() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-find-prev-char
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-substitute-lines
+bindkey -M vivis 'C' vi-visual-substitute-lines
+bindkey -M vivis 'S' vi-visual-substitute-lines
+bindkey -M vivis 'R' vi-visual-substitute-lines
+
+# Vi Visual move backward-blank-word
+vi-visual-backward-blank-word () {
+    zle .vi-backward-blank-word
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-tskip
-function vi-vis-tskip() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-find-next-char-skip
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-backward-blank-word
+bindkey -M vivis 'B' vi-visual-backward-blank-word
+
+# Vi Visual move forward-blank-word
+vi-visual-forward-blank-word-end () {
+    zle .vi-forward-blank-word-end
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-Tskip
-function vi-vis-Tskip() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-find-prev-char-skip
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-forward-blank-word-end    
+bindkey -M vivis 'E' vi-visual-forward-blank-word-end
+
+# Vi Visual move to prev char x
+vi-visual-find-prev-char () {
+    zle .vi-find-prev-char
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-repeatfind
-function vi-vis-repeatfind() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-repeat-find
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-find-prev-char
+bindkey -M vivis 'F' vi-visual-find-prev-char
+
+# Vi Visual insert bol
+vi-visual-insert-bol () {
+    zle vi-visual-exit-to-insert
+    zle .vi-insert-bol
 }
-#
-zle -N vi-vis-repeatfindrev
-function vi-vis-repeatfindrev() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-rev-repeat-find
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-insert-bol
+bindkey -M vivis 'I' vi-visual-insert-bol
+
+# Vi Visual Join Lines
+vi-visual-join () {
+    CURSOR=$__regstart
+    while [[ $RBUFFER == *$'\n'* && $CURSOR -lt $__regend ]];do
+        zle .vi-join
+    done
+    zle vi-visual-exit
 }
-#
-zle -N vi-vis-word
-function vi-vis-word() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-forward-word
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-join
+bindkey -M vivis 'J' vi-visual-join
+
+# Vi Visual move to prev char x and skip
+vi-visual-find-prev-char-skip () {
+    zle .vi-find-prev-char-skip
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-Word
-function vi-vis-Word() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-forward-blank-word
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-find-prev-char-skip
+bindkey -M vivis 'T' vi-visual-find-prev-char-skip
+
+# Vi Visual move forward blank word
+vi-visual-forward-blank-word () {
+    zle .vi-forward-blank-word
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-end
-function vi-vis-end() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-forward-word-end
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-forward-blank-word
+bindkey -M vivis 'W' vi-visual-forward-blank-word
+
+# Vi Visual move backward word
+vi-visual-backward-word () {
+    zle .vi-backward-word
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-End
-function vi-vis-End() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-forward-blank-word-end
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-backward-word
+bindkey -M vivis 'b' vi-visual-backward-word
+
+# Vi Visual change
+vi-visual-change () { 
+    zle vi-visual-kill
+    if [[ $_clipcopy == '+' ]];then
+        set-x-clipboard $CUTBUFFER
+        unset _clipcopy
+    fi
+    zle vi-visual-exit-to-insert
 }
-#
-zle -N vi-vis-back
-function vi-vis-back() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-backward-word
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-change
+bindkey -M vivis 'c' vi-visual-change
+
+# Vi Visual Kill and enter vicmd
+vi-visual-kill-and-vicmd () { 
+    zle vi-visual-kill
+    if [[ $_clipcopy == '+' ]];then
+        set-x-clipboard $CUTBUFFER
+        unset _clipcopy
+    fi
+    zle vi-visual-exit
 }
-#
-zle -N vi-vis-Back
-function vi-vis-Back() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-backward-blank-word
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-kill-and-vicmd
+bindkey -M vivis 'd' vi-visual-kill-and-vicmd
+bindkey -M vivis 'D' vi-visual-kill-and-vicmd
+
+# Vi Visual move forward to word end
+vi-visual-forward-word-end () {
+    zle .vi-forward-word-end
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-hidari
-function vi-vis-hidari() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	CURSOR=$(( $CURSOR - 1 ))
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-forward-word-end
+bindkey -M vivis 'e' vi-visual-forward-word-end
+
+# Vi Visual move to next char x
+vi-visual-find-next-char () {
+    zle .vi-find-next-char
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-leftdenai
-function vi-vis-leftdenai() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	CURSOR=$(( $CURSOR + 1 ))
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-find-next-char
+bindkey -M vivis 'f' vi-visual-find-next-char
+
+# Vi Visual move backward
+vi-visual-backward-char () { 
+    zle .vi-backward-char 
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-percent
-function vi-vis-percent() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-match-bracket
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-backward-char
+bindkey -M vivis 'h' vi-visual-backward-char
+bindkey -M vivis '^?' vi-visual-backward-char
+
+# Vi Visual move down
+vi-visual-down-line () { 
+    setopt extended_glob
+    local NL_CHAR NL_SUM
+        NL_CHAR=${RBUFFER//[^$'\n']/}
+    if [[ $RBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
+        zle .down-line-or-history
+        zle vi-visual-highlight
+    else
+        return 1
+    fi
 }
-#
-zle -N vi-vis-hat
-function vi-vis-hat() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-first-non-blank
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-down-line
+bindkey -M vivis 'j' vi-visual-down-line
+bindkey -M vivis '+' vi-visual-down-line
+bindkey -M vivis '^M' vi-visual-down-line
+
+# Vi Visual move up
+vi-visual-up-line () { 
+    setopt extended_glob
+    local NL_CHAR
+        NL_CHAR=${LBUFFER//[^$'\n']/}
+    if [[ $LBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
+        zle .up-line-or-history
+        zle vi-visual-highlight
+    else
+        return 1
+    fi    
 }
-#
-zle -N vi-vis-zero
-function vi-vis-zero() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-digit-or-beginning-of-line
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-up-line
+bindkey -M vivis 'k' vi-visual-up-line
+#bindkey -M vivis '-' vi-visual-up-line
+
+# Vi Visual move forward
+vi-visual-forward-char () { 
+    zle .vi-forward-char 
+    zle vi-visual-highlight 
 }
-#
-zle -N vi-vis-doller
-function vi-vis-doller() {
-	if [ ${VI_VIS_CURSOR_MARK} -eq -1 ] ;then
-		CURSOR=$(( $CURSOR + 1 ))
-	fi
-	zle vi-vis-cursor-shori_before
-	zle vi-end-of-line
-	zle vi-vis-cursor-shori_after
+zle -N vi-visual-forward-char
+bindkey -M vivis 'l' vi-visual-forward-char
+bindkey -M vivis ' ' vi-visual-forward-char
+
+# Vi Visual Put
+vi-visual-put () {
+    zle vi-visual-kill
+    zle vi-visual-exit
+    (( CURSOR = CURSOR - 1 ))
+    if [[ $_clipcopy == '+' ]];then
+        local cbuf
+        cbuf=$CUTBUFFER
+        get-x-clipboard
+        zle .vi-put-after
+        unset _clipcopy
+        CUTBUFFER=$cbuf
+    else
+        zle -U 2 && zle .vi-set-buffer 
+        zle .vi-put-after
+    fi
 }
-#
-##########################################################
-#
-zle -N vi-vis-delete
-function vi-vis-delete() {
-	zle vi-vis-key-reset
-	CURSOR=$(($CURSOR + 1))
-	zle kill-region
+zle -N vi-visual-put
+bindkey -M vivis 'p' vi-visual-put
+
+# Vi Visual exchange start and end of region
+vi-visual-exchange-points () {
+    local CS_SAVE
+    CS_SAVE=$CURSOR
+    CURSOR=$MARK
+    MARK=$CS_SAVE
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-Delete
-function vi-vis-Delete() {
-	zle vi-vis-key-reset
-	CURSOR=$(($CURSOR + 1))
-	zle kill-buffer
+zle -N vi-visual-exchange-points
+bindkey -M vivis 'o' vi-visual-exchange-points
+bindkey -M vivis 'O' vi-visual-exchange-points
+
+# Vi Visual move to till char x
+vi-visual-find-next-char-skip () {
+    zle .vi-find-next-char-skip
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-yank
-function vi-vis-yank() {
-	zle vi-vis-key-reset
-	CURSOR=$(($CURSOR + 1))
-	zle kill-region
-	zle vi-put-before
+zle -N vi-visual-find-next-char-skip
+bindkey -M vivis 't' vi-visual-find-next-char-skip
+
+# Vi Visual lowercase region
+vi-visual-lowercase-region () {
+    local LCSTART LCEND
+    (( LCSTART = __regstart + 1 ))
+    LCEND=$__regend
+
+    if [[ $__regstart == $__regend ]];then
+        BUFFER[${LCSTART}]=${(L)BUFFER[${LCSTART}]}
+        zle vi-visual-exit
+    else
+        BUFFER[${LCSTART},${LCEND}]=${(L)BUFFER[${LCSTART},${LCEND}]}
+        zle vi-visual-exit
+    fi
 }
-#
-zle -N vi-vis-Yank
-function vi-vis-Yank() {
-	zle vi-vis-key-reset
-	zle vi-yank-whole-line
+zle -N vi-visual-lowercase-region
+bindkey -M vivis 'u' vi-visual-lowercase-region
+
+# Vi Visual uppercase region
+vi-visual-uppercase-region () {
+    local LCSTART LCEND
+    (( LCSTART = __regstart + 1 ))
+    LCEND=$__regend
+
+    if [[ $__regstart == $__regend ]];then
+        BUFFER[${LCSTART}]=${(U)BUFFER[${LCSTART}]}
+        CURSOR=$__regstart
+        zle vi-visual-exit
+    else
+        BUFFER[${LCSTART},${LCEND}]=${(U)BUFFER[${LCSTART},${LCEND}]}
+        CURSOR=$__regstart
+        zle vi-visual-exit
+    fi
 }
-#
-zle -N vi-vis-change
-function vi-vis-change() {
-	zle vi-vis-key-reset
-	CURSOR=$(($CURSOR + 1))
-	zle kill-region
-	zle vi-insert
+zle -N vi-visual-uppercase-region
+bindkey -M vivis 'U' vi-visual-uppercase-region
+
+# Vi Visual replace region
+vi-visual-replace-region () {
+    local LCSTART LCEND
+    (( LCSTART = __regstart + 1 ))
+    LCEND=$__regend
+
+    if [[ $__regstart == $__regend ]];then
+        read -k key
+        BUFFER[${LCSTART}]=$key
+        zle vi-visual-exit
+    else
+        read -k key
+        n=$LCSTART
+        while [[ $n -le ${LCEND} ]];do 
+            if [[ ! $BUFFER[$n] == $'\n' ]] && [[ -n $BUFFER[$n] ]];then
+                BUFFER[$n]=${key} 
+            fi
+            (( n++ ))
+        done
+        CURSOR=$__regstart
+        zle vi-visual-exit
+    fi
 }
-#
-zle -N vi-vis-Change
-function vi-vis-Change() {
-	zle vi-vis-key-reset
-	zle kill-buffer
-	zle vi-insert
+zle -N vi-visual-replace-region
+bindkey -M vivis 'r' vi-visual-replace-region
+
+# Vi Visual move word forward
+vi-visual-forward-word () {
+    zle .vi-forward-word
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-paste
-function vi-vis-paste() {
-	zle vi-vis-key-reset
-	zle vi-put-after
+zle -N vi-visual-forward-word
+bindkey -M vivis 'w' vi-visual-forward-word
+
+# Vi Visual Yank
+vi-visual-yank () { 
+    if [[ $__regstart == $__regend ]];then
+        zle .vi-yank
+        zle vi-visual-exit
+    else
+        zle .copy-region-as-kill $BUFFER[${__regstart}+1,${__regend}]
+        zle vi-visual-exit
+    fi
+
+    if [[ $_clipcopy == '+' ]];then
+        set-x-clipboard $CUTBUFFER
+        unset _clipcopy
+    fi
 }
-#
-zle -N vi-vis-Paste
-function vi-vis-Paste() {
-	zle vi-vis-key-reset
-	zle vi-put-before
+zle -N vi-visual-yank
+bindkey -M vivis 'y' vi-visual-yank
+bindkey -M vivis 'Y' vi-visual-yank
+
+# Vi Visual move to bol
+vi-visual-bol () { 
+    zle .vi-digit-or-beginning-of-line
+    zle vi-visual-highlight
 }
-#
-zle -N vi-vis-open
-function vi-vis-open() {
-	CURSOR_MARK_TMP=$MARK
-	MARK=$(($CURSOR + 1))
-	CURSOR=$(( ${CURSOR_MARK_TMP} - 1))
+zle -N vi-visual-bol
+bindkey -M vivis '0' vi-visual-bol
+
+# Vi Visual move to eol
+vi-visual-eol () { 
+    zle .vi-end-of-line 
+    zle vi-visual-highlight
 }
-#
-##########################################################
-#
-zle -N vi-vis-add
-function vi-vis-add() {
-	zle vi-vis-key-reset
-	if [ $CURSOR -lt $MARK ] ;then 
-		CURSOR=$(($CURSOR + 1))
-	fi
-	MARK=$(($CURSOR + 1))
-	zle vi-vis-key-reset
-	zle vi-add-next
+zle -N vi-visual-eol
+bindkey -M vivis '\$' vi-visual-eol
+
+# Some use(less|ful) keybindings
+# I took this from grml's zshrc
+if [[ "$TERM" != emacs ]] ; then
+    [[ -z "$terminfo[kcuu1]" ]] || bindkey -M vivis "$terminfo[kcuu1]" vi-visual-up-line
+    [[ -z "$terminfo[kcud1]" ]] || bindkey -M vivis "$terminfo[kcud1]" vi-visual-down-line
+    [[ -z "$terminfo[kcuf1]" ]] || bindkey -M vivis "$terminfo[kcuf1]" vi-visual-forward-char
+    [[ -z "$terminfo[kcub1]" ]] || bindkey -M vivis "$terminfo[kcub1]" vi-visual-backward-char
+    # ncurses stuff:
+    [[ "$terminfo[kcuu1]" == $'\eO'* ]] && bindkey -M vivis "${terminfo[kcuu1]/O/[}" vi-visual-up-line
+    [[ "$terminfo[kcud1]" == $'\eO'* ]] && bindkey -M vivis "${terminfo[kcud1]/O/[}" vi-visual-down-line
+    [[ "$terminfo[kcuf1]" == $'\eO'* ]] && bindkey -M vivis "${terminfo[kcuf1]/O/[}" vi-visual-forward-char
+    [[ "$terminfo[kcub1]" == $'\eO'* ]] && bindkey -M vivis "${terminfo[kcub1]/O/[}" vi-visual-backward-char
+fi
+
+#######################################################################################################################
+## VI VISUAL LINES MODE ###############################################################################################
+
+# Create new keymap using existing vicmd keymap
+bindkey -N vivli vicmd
+bindkey -M vivli -r 'i'
+bindkey -M vivli -r 'I'
+bindkey -M vivli -r 'a'
+bindkey -M vivli -r 'A'
+bindkey -M vivli 'u' vi-visual-lowercase-region
+bindkey -M vivli 'U' vi-visual-uppercase-region
+bindkey -M vivli 'r' vi-visual-replace-region
+bindkey -M vivli 'J' vi-visual-join
+bindkey -M vivli 'y' vi-visual-yank
+bindkey -M vivli 'Y' vi-visual-yank
+bindkey -M vivli '^[' vi-visual-exit
+bindkey -M vivli 'V' vi-visual-exit
+bindkey -M vivli 'c' vi-visual-substitute-lines
+bindkey -M vivli 'C' vi-visual-substitute-lines
+bindkey -M vivli 'S' vi-visual-substitute-lines
+bindkey -M vivli 'R' vi-visual-substitute-lines
+
+# Highlight Lines
+vi-vlines-highlight () {
+    if [[ $__start1 == $__start2 ]] && [[ $__end1 == $__end2 ]];then
+        __regstart=$__start1
+        __regend=$__end1
+        region_highlight=("${__regstart} ${__regend} standout")
+        CURSOR=$__savepos
+    elif [[ $__start1 -lt $__start2 ]] && [[ $__end1 -lt $__end2 ]];then
+        __regstart=$__start1
+        __regend=$__end2
+        region_highlight=("${__regstart} ${__regend} standout")
+        CURSOR=$__savepos
+    elif [[ $__start1 -gt $__start2 ]] && [[ $__end1 -gt $__end2 ]];then
+        __regstart=$__start2
+        __regend=$__end1
+        region_highlight=("${__regstart} ${__regend} standout")
+        CURSOR=$__savepos
+    fi
 }
-#
-zle -N vi-vis-Add
-function vi-vis-Add() {
-	zle vi-vis-key-reset
-	zle vi-end-of-line
-	MARK=$(($CURSOR + 1))
-	zle vi-add-eol
+zle -N vi-vlines-highlight
+
+# Vi Visual Lines Mode
+vi-vlines-mode () {
+    zle -K vivli
+    __csorig=$CURSOR
+    __csbefore=$CURSOR
+    __savepos=$CURSOR
+    zle .vi-beginning-of-line -N
+    __start1=$CURSOR
+    __start2=$CURSOR
+    zle .end-of-line -N
+    __end1=$CURSOR
+    __end2=$CURSOR
+    zle vi-vlines-highlight
 }
-#
-zle -N vi-vis-insert
-function vi-vis-insert() {
-	zle vi-vis-key-reset
-	if [ $CURSOR -lt $MARK ] ;then 
-		CURSOR=$(($CURSOR + 1))
-	fi
-	MARK=$(($CURSOR + 1))
-	zle vi-vis-key-reset
-	zle vi-insert
+zle -N vi-vlines-mode
+bindkey -M vicmd 'V' vi-vlines-mode
+
+# Exchange Start and End Point of Visual Lines Mode
+vi-vlines-exchange-points () {
+    local SAVE_S1 SAVE_E1
+
+    __csbefore=$__csorig
+    __csorig=$CURSOR
+    __savepos=$__csbefore
+
+    SAVE_S1=$__start1
+    SAVE_E1=$__end1
+    __start1=$__start2
+    __start2=$SAVE_S1
+    __end1=$__end2
+    __end2=$SAVE_E1
+    zle vi-vlines-highlight
 }
-#
-zle -N vi-vis-Insert
-function vi-vis-Insert() {
-	zle vi-vis-key-reset
-	zle vi-digit-or-beginning-of-line
-	MARK=$CURSOR
-	zle vi-insert-bol
+zle -N vi-vlines-exchange-points
+bindkey -M vivli 'o' vi-vlines-exchange-points
+bindkey -M vivli 'O' vi-vlines-exchange-points
+
+# VI Visual Lines down
+vi-vlines-down-line () {
+    setopt extended_glob
+    local NL_CHAR NL_SUM
+    NL_CHAR=${RBUFFER//[^$'\n']/}
+    if [[ $RBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
+        zle .down-line-or-history
+        __savepos=$CURSOR
+        zle .vi-beginning-of-line -N
+        __start2=$CURSOR
+        zle .end-of-line -N
+        __end2=$CURSOR
+        zle vi-vlines-highlight
+    else
+        return 1
+    fi
 }
-#
-##########################################################
-#
-zle -N vi-vis-undo
-function vi-vis-undo() {
-	zle vi-vis-key-reset
-	zle vi-undo-change
+zle -N vi-vlines-down-line
+bindkey -M vivli 'j' vi-vlines-down-line
+
+# VI Visual Lines up
+vi-vlines-up-line () {
+    setopt extended_glob
+    local NL_CHAR NL_SUM
+    NL_CHAR=${LBUFFER//[^$'\n']/}
+    if [[ $LBUFFER == *$'\n'* && $#NL_CHAR -ge $NUMERIC ]];then
+        zle .up-line-or-history
+        __savepos=$CURSOR
+        zle .vi-beginning-of-line -N
+        __start2=$CURSOR
+        zle .end-of-line -N
+        __end2=$CURSOR
+        zle vi-vlines-highlight
+    else
+        return 1
+    fi
 }
-#
-zle -N vi-vis-repeat
-function vi-vis-repeat() {
-	zle vi-vis-key-reset
-	zle vi-repeat-change
+zle -N vi-vlines-up-line
+bindkey -M vivli 'k' vi-vlines-up-line
+
+# Kill highlighted region in VLines
+vi-vlines-kill () { 
+    MARK=$__regend
+    CURSOR=$__regstart
+    zle .kill-region 
+    if [[ $__regstart -le 1 ]];then
+        zle .kill-whole-line
+    else
+        zle .backward-delete-char -N
+        zle .forward-char -N
+    fi
 }
-#
-zle -N vi-vis-reset
-function vi-vis-reset() {
-	zle vi-vis-key-reset
-	zle vi-cmd-mode
+zle -N vi-vlines-kill
+
+# Kill highlighted region in VLines
+vi-vlines-kill-and-vicmd () { 
+    zle vi-vlines-kill
+    if [[ $_clipcopy == '+' ]];then
+        set-x-clipboard $CUTBUFFER
+        unset _clipcopy
+    fi
+    zle vi-visual-exit
 }
-zle -N vi-vis-reset
-function vi-vis-reset() {
-	if [ ${VI_VIS_MODE} -eq 2 ] ;then
-		CURSOR=$CURSOR_V_START
-	fi
-	zle vi-vis-key-reset
-	zle vi-cmd-mode
+zle -N vi-vlines-kill-and-vicmd
+bindkey -M vivli 'd' vi-vlines-kill-and-vicmd
+bindkey -M vivli 'D' vi-vlines-kill-and-vicmd
+
+# Exit Visual Lines Mode and enter VISUAL Mode keeping the region
+vi-vlines-exit-to-visual () {
+    zle -K vivis
+    MARK=$__csorig
+    zle vi-visual-highlight
 }
+zle -N vi-vlines-exit-to-visual
+bindkey -M vivli 'v' vi-vlines-exit-to-visual
+
+# Vi VLines Put
+vi-vlines-put () {
+    MARK=$__regend
+    CURSOR=$__regstart
+    zle .kill-region 
+    if [[ $_clipcopy == '+' ]];then
+        local cbuf
+        cbuf=$CUTBUFFER
+        get-x-clipboard
+        zle .vi-put-after
+        unset _clipcopy
+        CUTBUFFER=$cbuf
+    else
+        zle -U 2 && zle .vi-set-buffer 
+        zle .vi-put-after
+    fi
+    zle vi-visual-exit
+}
+zle -N vi-vlines-put
+bindkey -M vivli 'p' vi-vlines-put
+bindkey -M vivli 'P' vi-vlines-put
+
+##################### zsh vi misc stuff ###############################################################################
+#######################################################################################################################
+
+# Vi go to line x
+vi-goto-line () {
+    setopt extended_glob
+    local LNL_CHAR RNL_CHAR NL_SUM CUR_LINE
+    LNL_CHAR=${LBUFFER//[^$'\n']/}
+    RNL_CHAR=${RBUFFER//[^$'\n']/}
+    (( CUR_LINE = $#LNL_CHAR + 1 ))
+    (( NL_SUM = $#LNL_CHAR + $#RNL_CHAR + 1 ))
+
+    if [[ $NUMERIC -gt NL_SUM ]];then
+        return 1
+    fi
+
+    if [[ -z $NUMERIC || $NUMERIC == 0 ]];then
+        CURSOR=$#BUFFER
+        zle .vi-first-non-blank
+        return 0
+    elif [[ -n $NUMERIC && $CUR_LINE -lt $NUMERIC ]];then
+        n=$CUR_LINE
+        while [[ $n -lt $NUMERIC ]];do
+            zle .down-line-or-history -N
+            (( n++ ))
+        done
+        zle .vi-first-non-blank
+        return 0
+    elif [[ -n $NUMERIC && $CUR_LINE -gt $NUMERIC ]];then
+        n=$CUR_LINE
+        while [[ $n -gt $NUMERIC ]];do
+            zle .up-line-or-history -N
+            (( n-- ))
+        done
+        zle .vi-first-non-blank
+        return 0
+    elif [[ -n $NUMERIC && $CUR_LINE -eq $NUMERIC ]];then
+        zle .vi-first-non-blank
+        return 0
+    fi
+}
+zle -N vi-goto-line
+bindkey -M vicmd 'G' vi-goto-line
+
+# Vi go to first line
+vi-goto-first-line () {
+    CURSOR=0
+    zle .vi-first-non-blank
+}
+zle -N vi-goto-first-line
+bindkey -M vicmd 'gg' vi-goto-first-line
+
+# Vi VISUAL go to line
+vi-visual-goto-line () {
+    zle vi-goto-line
+    zle vi-visual-highlight
+}
+zle -N vi-visual-goto-line
+bindkey -M vivis 'G' vi-visual-goto-line
+
+# Vi VISUAL go to first line
+vi-visual-goto-first-line () {
+    zle vi-goto-first-line
+    zle vi-visual-highlight
+}
+zle -N vi-visual-goto-first-line
+bindkey -M vivis 'gg' vi-visual-goto-first-line
+
+# Vi Vlines go to line
+vi-vlines-goto-line () {
+    zle vi-goto-line
+    __savepos=$CURSOR
+    zle .vi-beginning-of-line -N
+    __start2=$CURSOR
+    zle .end-of-line -N
+    __end2=$CURSOR
+    zle vi-vlines-highlight
+}
+zle -N vi-vlines-goto-line
+bindkey -M vivli 'G' vi-vlines-goto-line
+
+# Vi Vlines go to first line
+vi-vlines-goto-first-line () {
+    zle vi-goto-first-line
+    __savepos=$CURSOR
+    zle .vi-beginning-of-line -N
+    __start2=$CURSOR
+    zle .end-of-line -N
+    __end2=$CURSOR
+    zle vi-vlines-highlight
+}
+zle -N vi-vlines-goto-first-line
+bindkey -M vivli 'gg' vi-vlines-goto-first-line
