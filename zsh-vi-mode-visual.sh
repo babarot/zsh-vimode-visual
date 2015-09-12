@@ -1,13 +1,17 @@
 #!/bin/zsh -f
 
-#eval '
 get-x-clipboard() {
-alias pbcopy='xsel --clipboard --input'
-alias pbpaste='xsel --clipboard --output'
+    if which pbpaste >/dev/null 2>&1; then
+        alias clippaste='pbpaste'
+    elif which xsel >/dev/null 2>&1; then
+        alias clippaste='xsel --clipboard --output'
+    else
+        return 1
+    fi
 
     (( $+DISPLAY )) || return 1
     local r
-    r=$(pbpaste)
+    r=$(clippaste)
     if [[ -n $r && $r != $CUTBUFFER ]]; then
         killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
         CUTBUFFER=$r
@@ -15,10 +19,17 @@ alias pbpaste='xsel --clipboard --output'
 }
 
 set-x-clipboard() {
+    if which pbcopy >/dev/null 2>&1; then
+        alias clipcopy='pbcopy'
+    elif which xsel >/dev/null 2>&1; then
+        alias clipcopy='xsel --clipboard --input'
+    else
+        return 1
+    fi
+
     (( ! $+DISPLAY )) ||
-        print -rn -- "$1" | pbcopy
+        print -rn -- "$1" | clipcopy
 }
-#'
 
 # redefine the copying widgets so that they update the clipboard.
 for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
