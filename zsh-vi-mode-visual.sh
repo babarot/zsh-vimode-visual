@@ -78,17 +78,6 @@ zle -N vi-put-before
 ## VI VISUAL MODE #####################################################################################################
 
 # create a new keymap and remap a few key's with other or new widget's
-bindkey -N vivis
-bindkey -M vivis "\"" vi-set-buffer
-bindkey -M vivis '1' digit-argument
-bindkey -M vivis '2' digit-argument
-bindkey -M vivis '3' digit-argument
-bindkey -M vivis '4' digit-argument
-bindkey -M vivis '5' digit-argument
-bindkey -M vivis '6' digit-argument
-bindkey -M vivis '7' digit-argument
-bindkey -M vivis '8' digit-argument
-bindkey -M vivis '9' digit-argument
 
 # Main Highlighting Widget for VISUAL Mode
 vi-visual-highlight () {
@@ -119,7 +108,6 @@ vi-visual-mode () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-mode
-bindkey -M vicmd 'v' vi-visual-mode
 
 # Exit Vi Visual mode and go to vi-cmd-mode
 vi-visual-exit () {
@@ -131,10 +119,6 @@ vi-visual-exit () {
     zle .vi-cmd-mode
 }
 zle -N vi-visual-exit
-bindkey -M vivis '^[' vi-visual-exit
-bindkey -M vivis 'jj' vi-visual-exit
-#bindkey -M vivis 'v' vi-visual-exit
-bindkey -M vivis 'v' vi-visual-eol
 
 # Vi Visual Kill
 vi-visual-kill () {
@@ -177,7 +161,6 @@ vi-visual-exit-to-vlines () {
     zle vi-vlines-highlight
 }
 zle -N vi-visual-exit-to-vlines
-bindkey -M vivis 'V' vi-visual-exit-to-vlines
 
 # Exit Vi Visual and open line above
 vi-visual-open-above () {
@@ -193,7 +176,6 @@ vi-visual-match-bracket () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-match-bracket
-bindkey -M vivis '%' vi-visual-match-bracket
 
 # Vi Visual move to column
 vi-visual-goto-column () {
@@ -201,7 +183,6 @@ vi-visual-goto-column () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-goto-column
-bindkey -M vivis '\|' vi-visual-goto-column
 
 # Vi Visual move back to first non-blank char
 vi-visual-first-non-blank () {
@@ -209,7 +190,6 @@ vi-visual-first-non-blank () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-first-non-blank
-bindkey -M vivis '\^' vi-visual-first-non-blank
 
 # Vi Visual repeat find
 vi-visual-repeat-find () {
@@ -217,7 +197,6 @@ vi-visual-repeat-find () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-repeat-find
-bindkey -M vivis ';' vi-visual-repeat-find
 
 # Vi Visual reverse repeat find
 vi-visual-rev-repeat-find () {
@@ -225,7 +204,6 @@ vi-visual-rev-repeat-find () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-rev-repeat-find
-bindkey -M vivis ',' vi-visual-rev-repeat-find
 
 # Vi Visual kill whole line and enter to viins
 vi-visual-substitute-lines () {
@@ -243,9 +221,6 @@ vi-visual-substitute-lines () {
     zle vi-visual-exit-to-insert
 }
 zle -N vi-visual-substitute-lines
-bindkey -M vivis 'C' vi-visual-substitute-lines
-#bindkey -M vivis 'S' vi-visual-substitute-lines
-bindkey -M vivis 'R' vi-visual-substitute-lines
 
 # Vi Visual move backward-blank-word
 vi-visual-backward-blank-word () {
@@ -253,7 +228,6 @@ vi-visual-backward-blank-word () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-backward-blank-word
-bindkey -M vivis 'B' vi-visual-backward-blank-word
 
 # Vi Visual move forward-blank-word
 vi-visual-forward-blank-word-end () {
@@ -261,7 +235,6 @@ vi-visual-forward-blank-word-end () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-forward-blank-word-end
-bindkey -M vivis 'E' vi-visual-forward-blank-word-end
 
 # Vi Visual move to prev char x
 vi-visual-find-prev-char () {
@@ -269,7 +242,6 @@ vi-visual-find-prev-char () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-find-prev-char
-bindkey -M vivis 'F' vi-visual-find-prev-char
 
 # Vi Visual insert bol
 vi-visual-insert-bol () {
@@ -277,7 +249,6 @@ vi-visual-insert-bol () {
     zle .vi-insert-bol
 }
 zle -N vi-visual-insert-bol
-bindkey -M vivis 'I' vi-visual-insert-bol
 
 # Vi Visual Join Lines
 vi-visual-join () {
@@ -288,7 +259,6 @@ vi-visual-join () {
     zle vi-visual-exit
 }
 zle -N vi-visual-join
-bindkey -M vivis 'J' vi-visual-join
 
 # Vi Visual move to prev char x and skip
 vi-visual-find-prev-char-skip () {
@@ -296,7 +266,6 @@ vi-visual-find-prev-char-skip () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-find-prev-char-skip
-bindkey -M vivis 'T' vi-visual-find-prev-char-skip
 
 # Vi Visual move forward blank word
 vi-visual-forward-blank-word () {
@@ -304,7 +273,6 @@ vi-visual-forward-blank-word () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-forward-blank-word
-bindkey -M vivis 'W' vi-visual-forward-blank-word
 
 # Vi Visual move backward word
 vi-visual-backward-word () {
@@ -312,7 +280,6 @@ vi-visual-backward-word () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-backward-word
-bindkey -M vivis 'b' vi-visual-backward-word
 
 # Vi Visual change
 vi-visual-change () {
@@ -324,7 +291,6 @@ vi-visual-change () {
     zle vi-visual-exit-to-insert
 }
 zle -N vi-visual-change
-bindkey -M vivis 'c' vi-visual-change
 
 # Vi Visual Kill and enter vicmd
 vi-visual-kill-and-vicmd () {
@@ -336,8 +302,6 @@ vi-visual-kill-and-vicmd () {
     zle vi-visual-exit
 }
 zle -N vi-visual-kill-and-vicmd
-bindkey -M vivis 'd' vi-visual-kill-and-vicmd
-bindkey -M vivis 'D' vi-visual-kill-and-vicmd
 
 # Vi Visual move forward to word end
 vi-visual-forward-word-end () {
@@ -345,7 +309,6 @@ vi-visual-forward-word-end () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-forward-word-end
-bindkey -M vivis 'e' vi-visual-forward-word-end
 
 # Vi Visual move to next char x
 vi-visual-find-next-char () {
@@ -353,7 +316,6 @@ vi-visual-find-next-char () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-find-next-char
-bindkey -M vivis 'f' vi-visual-find-next-char
 
 # Vi Visual move backward
 vi-visual-backward-char () {
@@ -361,8 +323,6 @@ vi-visual-backward-char () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-backward-char
-bindkey -M vivis 'h' vi-visual-backward-char
-bindkey -M vivis '^?' vi-visual-backward-char
 
 # Vi Visual move down
 vi-visual-down-line () {
@@ -377,9 +337,6 @@ vi-visual-down-line () {
     fi
 }
 zle -N vi-visual-down-line
-bindkey -M vivis 'j' vi-visual-down-line
-bindkey -M vivis '+' vi-visual-down-line
-bindkey -M vivis '^M' vi-visual-yank
 
 # Vi Visual move up
 vi-visual-up-line () {
@@ -394,8 +351,6 @@ vi-visual-up-line () {
     fi
 }
 zle -N vi-visual-up-line
-bindkey -M vivis 'k' vi-visual-up-line
-#bindkey -M vivis '-' vi-visual-up-line
 
 # Vi Visual move forward
 vi-visual-forward-char () {
@@ -404,8 +359,6 @@ vi-visual-forward-char () {
 }
 
 zle -N vi-visual-forward-char
-bindkey -M vivis 'l' vi-visual-forward-char
-bindkey -M vivis ' ' vi-visual-forward-char
 
 # Vi Visual Put
 vi-visual-put () {
@@ -425,7 +378,6 @@ vi-visual-put () {
     fi
 }
 zle -N vi-visual-put
-bindkey -M vivis 'p' vi-visual-put
 
 # Vi Visual exchange start and end of region
 vi-visual-exchange-points () {
@@ -436,8 +388,6 @@ vi-visual-exchange-points () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-exchange-points
-bindkey -M vivis 'o' vi-visual-exchange-points
-bindkey -M vivis 'O' vi-visual-exchange-points
 
 # Vi Visual move to till char x
 vi-visual-find-next-char-skip () {
@@ -445,7 +395,6 @@ vi-visual-find-next-char-skip () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-find-next-char-skip
-bindkey -M vivis 't' vi-visual-find-next-char-skip
 
 # Vi Visual lowercase region
 vi-visual-lowercase-region () {
@@ -462,7 +411,6 @@ vi-visual-lowercase-region () {
     fi
 }
 zle -N vi-visual-lowercase-region
-bindkey -M vivis 'u' vi-visual-lowercase-region
 
 # Vi Visual uppercase region
 vi-visual-uppercase-region () {
@@ -481,7 +429,6 @@ vi-visual-uppercase-region () {
     fi
 }
 zle -N vi-visual-uppercase-region
-bindkey -M vivis 'U' vi-visual-uppercase-region
 
 # Vi Visual replace region
 vi-visual-replace-region () {
@@ -507,7 +454,6 @@ vi-visual-replace-region () {
     fi
 }
 zle -N vi-visual-replace-region
-bindkey -M vivis 'r' vi-visual-replace-region
 
 # Vi Visual move word forward
 vi-visual-forward-word () {
@@ -515,7 +461,6 @@ vi-visual-forward-word () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-forward-word
-bindkey -M vivis 'w' vi-visual-forward-word
 
 # Vi Visual Yank
 vi-visual-yank () {
@@ -533,8 +478,6 @@ vi-visual-yank () {
     fi
 }
 zle -N vi-visual-yank
-bindkey -M vivis 'y' vi-visual-yank
-bindkey -M vivis 'Y' vi-visual-yank
 
 # Vi Visual move to bol
 vi-visual-bol () {
@@ -542,7 +485,6 @@ vi-visual-bol () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-bol
-bindkey -M vivis '0' vi-visual-bol
 
 # Vi Visual move to eol
 vi-visual-eol () {
@@ -551,7 +493,6 @@ vi-visual-eol () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-eol
-bindkey -M vivis '\$' vi-visual-eol
 
 # Some use(less|ful) keybindings
 # I took this from grml's zshrc
@@ -626,7 +567,6 @@ vi-vlines-mode () {
     zle vi-vlines-highlight
 }
 zle -N vi-vlines-mode
-bindkey -M vicmd 'V' vi-vlines-mode
 
 # Exchange Start and End Point of Visual Lines Mode
 vi-vlines-exchange-points () {
@@ -645,8 +585,6 @@ vi-vlines-exchange-points () {
     zle vi-vlines-highlight
 }
 zle -N vi-vlines-exchange-points
-bindkey -M vivli 'o' vi-vlines-exchange-points
-bindkey -M vivli 'O' vi-vlines-exchange-points
 
 # VI Visual Lines down
 vi-vlines-down-line () {
@@ -666,7 +604,6 @@ vi-vlines-down-line () {
     fi
 }
 zle -N vi-vlines-down-line
-bindkey -M vivli 'j' vi-vlines-down-line
 
 # VI Visual Lines up
 vi-vlines-up-line () {
@@ -686,7 +623,6 @@ vi-vlines-up-line () {
     fi
 }
 zle -N vi-vlines-up-line
-bindkey -M vivli 'k' vi-vlines-up-line
 
 # Kill highlighted region in VLines
 vi-vlines-kill () {
@@ -712,8 +648,6 @@ vi-vlines-kill-and-vicmd () {
     zle vi-visual-exit
 }
 zle -N vi-vlines-kill-and-vicmd
-bindkey -M vivli 'd' vi-vlines-kill-and-vicmd
-bindkey -M vivli 'D' vi-vlines-kill-and-vicmd
 
 # Exit Visual Lines Mode and enter VISUAL Mode keeping the region
 vi-vlines-exit-to-visual () {
@@ -722,8 +656,6 @@ vi-vlines-exit-to-visual () {
     zle vi-visual-highlight
 }
 zle -N vi-vlines-exit-to-visual
-#bindkey -M vivli 'v' vi-vlines-exit-to-visual
-bindkey -M vivli 'v' vi-vlines-exit-to-visual
 
 # Vi VLines Put
 vi-vlines-put () {
@@ -744,8 +676,6 @@ vi-vlines-put () {
     zle vi-visual-exit
 }
 zle -N vi-vlines-put
-bindkey -M vivli 'p' vi-vlines-put
-bindkey -M vivli 'P' vi-vlines-put
 
 ##################### zsh vi misc stuff ###############################################################################
 #######################################################################################################################
@@ -789,7 +719,6 @@ vi-goto-line () {
     fi
 }
 zle -N vi-goto-line
-bindkey -M vicmd 'G' vi-goto-line
 
 # Vi go to first line
 vi-goto-first-line () {
@@ -797,7 +726,6 @@ vi-goto-first-line () {
     zle .vi-first-non-blank
 }
 zle -N vi-goto-first-line
-bindkey -M vicmd 'gg' vi-goto-first-line
 
 # Vi VISUAL go to line
 vi-visual-goto-line () {
@@ -805,7 +733,6 @@ vi-visual-goto-line () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-goto-line
-bindkey -M vivis 'G' vi-visual-goto-line
 
 # Vi VISUAL go to first line
 vi-visual-goto-first-line () {
@@ -813,7 +740,6 @@ vi-visual-goto-first-line () {
     zle vi-visual-highlight
 }
 zle -N vi-visual-goto-first-line
-bindkey -M vivis 'gg' vi-visual-goto-first-line
 
 # Vi Vlines go to line
 vi-vlines-goto-line () {
@@ -826,7 +752,6 @@ vi-vlines-goto-line () {
     zle vi-vlines-highlight
 }
 zle -N vi-vlines-goto-line
-bindkey -M vivli 'G' vi-vlines-goto-line
 
 # Vi Vlines go to first line
 vi-vlines-goto-first-line () {
@@ -839,38 +764,114 @@ vi-vlines-goto-first-line () {
     zle vi-vlines-highlight
 }
 zle -N vi-vlines-goto-first-line
-bindkey -M vivli 'gg' vi-vlines-goto-first-line
 
 vi-surround-dq() {
     zle vi-visual-kill
     BUFFER="$LBUFFER\"$CUTBUFFER\"$RBUFFER"
     zle vi-visual-exit
 }
+zle -N vi-surround-dq
 
 vi-surround-sq() {
     zle vi-visual-kill
     BUFFER="$LBUFFER'$CUTBUFFER'$RBUFFER"
     zle vi-visual-exit
 }
+zle -N vi-surround-sq
 
 vi-surround-pr() {
     zle vi-visual-kill
     BUFFER="$LBUFFER($CUTBUFFER)$RBUFFER"
     zle vi-visual-exit
 }
+zle -N vi-surround-pr
 
 vi-surround-sp() {
     zle vi-visual-kill
     BUFFER="$LBUFFER $CUTBUFFER $RBUFFER"
     zle vi-visual-exit
 }
-
-zle -N vi-surround-dq
-zle -N vi-surround-sq
-zle -N vi-surround-pr
 zle -N vi-surround-sp
-bindkey -M vivis 'S"' vi-surround-dq
+
+#bindkey -M vivis '-' vi-visual-up-line
+#bindkey -M vivis 'S' vi-visual-substitute-lines
+#bindkey -M vivis 'v' vi-visual-exit
+#bindkey -M vivli 'v' vi-vlines-exit-to-visual
+
+bindkey -N vivis
+bindkey -M vivis "\"" vi-set-buffer
+bindkey -M vivis '1'  digit-argument
+bindkey -M vivis '2'  digit-argument
+bindkey -M vivis '3'  digit-argument
+bindkey -M vivis '4'  digit-argument
+bindkey -M vivis '5'  digit-argument
+bindkey -M vivis '6'  digit-argument
+bindkey -M vivis '7'  digit-argument
+bindkey -M vivis '8'  digit-argument
+bindkey -M vivis '9'  digit-argument
+bindkey -M vicmd 'G'  vi-goto-line
+bindkey -M vicmd 'V'  vi-vlines-mode
+bindkey -M vicmd 'gg' vi-goto-first-line
+bindkey -M vicmd 'v'  vi-visual-mode
 bindkey -M vivis "S'" vi-surround-sq
+bindkey -M vivis ' '  vi-visual-forward-char
+bindkey -M vivis '%'  vi-visual-match-bracket
+bindkey -M vivis '+'  vi-visual-down-line
+bindkey -M vivis ','  vi-visual-rev-repeat-find
+bindkey -M vivis '0'  vi-visual-bol
+bindkey -M vivis ';'  vi-visual-repeat-find
+bindkey -M vivis 'B'  vi-visual-backward-blank-word
+bindkey -M vivis 'C'  vi-visual-substitute-lines
+bindkey -M vivis 'D'  vi-visual-kill-and-vicmd
+bindkey -M vivis 'E'  vi-visual-forward-blank-word-end
+bindkey -M vivis 'F'  vi-visual-find-prev-char
+bindkey -M vivis 'G'  vi-visual-goto-line
+bindkey -M vivis 'I'  vi-visual-insert-bol
+bindkey -M vivis 'J'  vi-visual-join
+bindkey -M vivis 'O'  vi-visual-exchange-points
+bindkey -M vivis 'R'  vi-visual-substitute-lines
+bindkey -M vivis 'S ' vi-surround-sp
+bindkey -M vivis 'S"' vi-surround-dq
 bindkey -M vivis 'S(' vi-surround-pr
 bindkey -M vivis 'S)' vi-surround-pr
-bindkey -M vivis 'S ' vi-surround-sp
+bindkey -M vivis 'T'  vi-visual-find-prev-char-skip
+bindkey -M vivis 'U'  vi-visual-uppercase-region
+bindkey -M vivis 'V'  vi-visual-exit-to-vlines
+bindkey -M vivis 'W'  vi-visual-forward-blank-word
+bindkey -M vivis 'Y'  vi-visual-yank
+bindkey -M vivis '\$' vi-visual-eol
+bindkey -M vivis '\^' vi-visual-first-non-blank
+bindkey -M vivis '\|' vi-visual-goto-column
+bindkey -M vivis '^?' vi-visual-backward-char
+bindkey -M vivis '^M' vi-visual-yank
+bindkey -M vivis '^[' vi-visual-exit
+bindkey -M vivis 'b'  vi-visual-backward-word
+bindkey -M vivis 'c'  vi-visual-change
+bindkey -M vivis 'd'  vi-visual-kill-and-vicmd
+bindkey -M vivis 'e'  vi-visual-forward-word-end
+bindkey -M vivis 'f'  vi-visual-find-next-char
+bindkey -M vivis 'gg' vi-visual-goto-first-line
+bindkey -M vivis 'h'  vi-visual-backward-char
+bindkey -M vivis 'j'  vi-visual-down-line
+bindkey -M vivis 'jj' vi-visual-exit
+bindkey -M vivis 'k'  vi-visual-up-line
+bindkey -M vivis 'l'  vi-visual-forward-char
+bindkey -M vivis 'o'  vi-visual-exchange-points
+bindkey -M vivis 'p'  vi-visual-put
+bindkey -M vivis 'r'  vi-visual-replace-region
+bindkey -M vivis 't'  vi-visual-find-next-char-skip
+bindkey -M vivis 'u'  vi-visual-lowercase-region
+bindkey -M vivis 'v'  vi-visual-eol
+bindkey -M vivis 'w'  vi-visual-forward-word
+bindkey -M vivis 'y'  vi-visual-yank
+bindkey -M vivli 'D'  vi-vlines-kill-and-vicmd
+bindkey -M vivli 'G'  vi-vlines-goto-line
+bindkey -M vivli 'O'  vi-vlines-exchange-points
+bindkey -M vivli 'P'  vi-vlines-put
+bindkey -M vivli 'd'  vi-vlines-kill-and-vicmd
+bindkey -M vivli 'gg' vi-vlines-goto-first-line
+bindkey -M vivli 'j'  vi-vlines-down-line
+bindkey -M vivli 'k'  vi-vlines-up-line
+bindkey -M vivli 'o'  vi-vlines-exchange-points
+bindkey -M vivli 'p'  vi-vlines-put
+bindkey -M vivli 'v'  vi-vlines-exit-to-visual
