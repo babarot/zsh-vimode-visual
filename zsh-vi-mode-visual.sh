@@ -20,16 +20,16 @@
 
 get-x-clipboard() {
     if which pbpaste >/dev/null 2>&1; then
-        alias clippaste='pbpaste'
+        clippaste='pbpaste'
     elif which xsel >/dev/null 2>&1; then
-        alias clippaste='xsel --clipboard --output'
+        clippaste='xsel --clipboard --output'
     else
         return 1
     fi
 
     (( $+DISPLAY )) || return 1
     local r
-    r=$(clippaste)
+    r=$(eval "$clippaste")
     if [[ -n $r && $r != $CUTBUFFER ]]; then
         killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
         CUTBUFFER=$r
@@ -38,15 +38,15 @@ get-x-clipboard() {
 
 set-x-clipboard() {
     if which pbcopy >/dev/null 2>&1; then
-        alias clipcopy='pbcopy'
+        clipcopy='pbcopy'
     elif which xsel >/dev/null 2>&1; then
-        alias clipcopy='xsel --clipboard --input'
+        clipcopy='xsel --clipboard --input'
     else
         return 1
     fi
 
     (( ! $+DISPLAY )) ||
-        print -rn -- "$1" | clipcopy
+        print -rn -- "$1" | eval "$clipcopy"
 }
 
 # redefine the copying widgets so that they update the clipboard.
