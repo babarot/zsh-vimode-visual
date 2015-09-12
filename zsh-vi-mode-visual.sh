@@ -535,7 +535,7 @@ bindkey -M vivli 'J' vi-visual-join
 bindkey -M vivli 'y' vi-visual-yank
 bindkey -M vivli 'Y' vi-visual-yank
 bindkey -M vivli '^[' vi-visual-exit
-bindkey -M vivli 'jj' vi-visual-exit
+#bindkey -M vivli 'jj' vi-visual-exit
 bindkey -M vivli 'V' vi-visual-exit
 bindkey -M vivli 'c' vi-visual-substitute-lines
 bindkey -M vivli 'C' vi-visual-substitute-lines
@@ -578,6 +578,20 @@ vi-vlines-mode () {
     zle vi-vlines-highlight
 }
 zle -N vi-vlines-mode
+
+vi-visual-whole-line () {
+    __csorig=$CURSOR
+    __csbefore=$CURSOR
+    __savepos=$CURSOR
+    zle .vi-beginning-of-line -N
+    __start1=$CURSOR
+    __start2=$CURSOR
+    zle .end-of-line -N
+    __end1=$CURSOR
+    __end2=$CURSOR
+    zle vi-vlines-highlight
+}
+zle -N vi-visual-whole-line
 
 # Exchange Start and End Point of Visual Lines Mode
 vi-vlines-exchange-points () {
@@ -776,33 +790,33 @@ vi-vlines-goto-first-line () {
 }
 zle -N vi-vlines-goto-first-line
 
-vi-surround-dq() {
+vi-visual-surround-dquote() {
     zle vi-visual-kill
     BUFFER="$LBUFFER\"$CUTBUFFER\"$RBUFFER"
     zle vi-visual-exit
 }
-zle -N vi-surround-dq
+zle -N vi-visual-surround-dquote
 
-vi-surround-sq() {
+vi-visual-surround-squote() {
     zle vi-visual-kill
     BUFFER="$LBUFFER'$CUTBUFFER'$RBUFFER"
     zle vi-visual-exit
 }
-zle -N vi-surround-sq
+zle -N vi-visual-surround-squote
 
-vi-surround-pr() {
+vi-visual-surround-parenthesis() {
     zle vi-visual-kill
     BUFFER="$LBUFFER($CUTBUFFER)$RBUFFER"
     zle vi-visual-exit
 }
-zle -N vi-surround-pr
+zle -N vi-visual-surround-parenthesis
 
-vi-surround-sp() {
+vi-visual-surround-space() {
     zle vi-visual-kill
     BUFFER="$LBUFFER $CUTBUFFER $RBUFFER"
     zle vi-visual-exit
 }
-zle -N vi-surround-sp
+zle -N vi-visual-surround-space
 
 #bindkey -M vivis '-' vi-visual-up-line
 #bindkey -M vivis 'S' vi-visual-substitute-lines
@@ -824,7 +838,7 @@ bindkey -M vicmd 'G'  vi-goto-line
 bindkey -M vicmd 'V'  vi-vlines-mode
 bindkey -M vicmd 'gg' vi-goto-first-line
 bindkey -M vicmd 'v'  vi-visual-mode
-bindkey -M vivis "S'" vi-surround-sq
+bindkey -M vivis "S'" vi-visual-surround-squote
 bindkey -M vivis ' '  vi-visual-forward-char
 bindkey -M vivis '%'  vi-visual-match-bracket
 bindkey -M vivis '+'  vi-visual-down-line
@@ -841,10 +855,10 @@ bindkey -M vivis 'I'  vi-visual-insert-bol
 bindkey -M vivis 'J'  vi-visual-join
 bindkey -M vivis 'O'  vi-visual-exchange-points
 bindkey -M vivis 'R'  vi-visual-substitute-lines
-bindkey -M vivis 'S ' vi-surround-sp
-bindkey -M vivis 'S"' vi-surround-dq
-bindkey -M vivis 'S(' vi-surround-pr
-bindkey -M vivis 'S)' vi-surround-pr
+bindkey -M vivis 'S ' vi-visual-surround-space
+bindkey -M vivis 'S"' vi-visual-surround-dquote
+bindkey -M vivis 'S(' vi-visual-surround-parenthesis
+bindkey -M vivis 'S)' vi-visual-surround-parenthesis
 bindkey -M vivis 'T'  vi-visual-find-prev-char-skip
 bindkey -M vivis 'U'  vi-visual-uppercase-region
 bindkey -M vivis 'V'  vi-visual-exit-to-vlines
