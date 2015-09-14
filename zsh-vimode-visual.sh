@@ -18,6 +18,8 @@
 #
 #===============================================================================
 
+bindkey -N vivis
+
 get-x-clipboard() {
     if which pbpaste >/dev/null 2>&1; then
         clippaste='pbpaste'
@@ -841,7 +843,6 @@ zle -N vi-visual-surround-space
 #bindkey -M vivis 'v' vi-visual-exit
 #bindkey -M vivli 'v' vi-vlines-exit-to-visual
 
-bindkey -N vivis
 bindkey -M vivis "\"" vi-set-buffer
 bindkey -M vivis '1'  digit-argument
 bindkey -M vivis '2'  digit-argument
