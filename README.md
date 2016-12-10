@@ -11,10 +11,10 @@ Zsh Vi mode Visual
 
 ## Installation
 
-If you use [Antigen](https://github.com/zsh-users/antigen) as Zsh plugin manager, all you have to do is to put something like this to your `.zshrc`.
+If you use [zplug](https://github.com/zplug/zplug) as Zsh plugin manager, all you have to do is to put something like this to your `.zshrc`.
 
 ```bash
-antigen bundle b4b4r07/zsh-vimode-visual
+zplug "b4b4r07/zsh-vimode-visual"
 ```
 
 Otherwise, to install manually:
