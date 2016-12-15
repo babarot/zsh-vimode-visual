@@ -1,6 +1,8 @@
 Zsh Vi mode Visual
 ===
 
+[![](https://img.shields.io/badge/powered%20by-zplug-ca7f85.svg?style=flat)](https://github.com/zplug/zplug)
+
 `zsh-vimode-visual` provides visual mode in [Zsh Line Editer](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)
 
 ## Description
