@@ -1,4 +1,4 @@
-Zsh Vi mode Visual
+zsh-vimode-visual
 ===
 
 [![](https://img.shields.io/badge/powered%20by-zplug-ca7f85.svg?style=flat)](https://github.com/zplug/zplug)
@@ -13,15 +13,15 @@ Zsh Vi mode Visual
 
 ## Installation
 
-If you use [zplug](https://github.com/zplug/zplug) as Zsh plugin manager, all you have to do is to put something like this to your `.zshrc`.
+If you use [zplug](https://github.com/zplug/zplug) as a plugin manager for zsh, all you have to do is to put something like this to your `.zshrc`.
 
 ```zsh
 zplug "b4b4r07/zsh-vimode-visual"
 ```
 
-Also ,if you want to use it without conflict with [`zsh-users/zsh-syntax-highlighting`](https://github.com/zsh-users/zsh-syntax-highlighting), please set as follows.
+Also, if you want to use it without conflict with [`zsh-users/zsh-syntax-highlighting`](https://github.com/zsh-users/zsh-syntax-highlighting), please set as follows.
 
-```
+```zsh
 zplug "zsh-users/zsh-syntax-highlighting", defer:2
 zplug "b4b4r07/zsh-vimode-visual", defer:3
 ```
@@ -38,7 +38,7 @@ $ source ./zsh-vimode-visual/zsh-vimode-visual.zsh
 
 ## Configuration
 
-`zsh-vimode-visual` is implemented with *vivis* that emulates Vim visual mode and *vivli* mode.
+`zsh-vimode-visual` is implemented with ***vivis*** that emulates Vim visual mode and ***vivli*** mode.
 
 ```zsh
 bindkey -M vicmd 'V'  vi-vlines-mode
@@ -92,4 +92,4 @@ bindkey -M vivis 'y'  vi-visual-yank
 
 ## License
 
-GNU GPL version 3 ([@b4b4r07](https://twitter.com/b4b4r07))
+MIT [@b4b4r07](https://twitter.com/b4b4r07)
