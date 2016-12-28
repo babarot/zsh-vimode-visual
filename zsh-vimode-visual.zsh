@@ -18,7 +18,7 @@ get-x-clipboard()
     clipboard="$( ${=clippaste} )"
     if [[ -n $clipboard && $clipboard != $CUTBUFFER ]]; then
         killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
-        CUTBUFFER=$clipboard
+        CUTBUFFER="$clipboard"
     fi
 }
 
@@ -33,23 +33,8 @@ set-x-clipboard()
         return 1
     fi
 
-    (( ! $+DISPLAY )) || print -rn -- "$1" | ${=clipcopy}
+    (( ! $+DISPLAY )) || printf -- "$@" | ${=clipcopy}
 }
-
-# redefine the copying widgets so that they update the clipboard.
-# for w in copy-region-as-kill vi-delete vi-yank vi-change vi-change-whole-line vi-change-eol; do
-#     eval '
-#     '$w'() {
-#         #if [[ $_clipcopy == '+' ]];then
-#             zle .'$w'
-#             set-x-clipboard $CUTBUFFER
-#             unset _clipcopy
-#         #else
-#         #    zle .'$w'
-#         #fi
-#     }
-#     zle -N '$w
-# done
 
 vi-set-buffer()
 {
@@ -67,11 +52,11 @@ vi-put-after()
 {
     local cbuf
     if [[ $_clipcopy == '+' ]]; then
-        cbuf=$CUTBUFFER
+        cbuf="$CUTBUFFER"
         get-x-clipboard
         zle .vi-put-after
         unset _clipcopy
-        CUTBUFFER=$cbuf
+        CUTBUFFER="$cbuf"
     else
         zle .vi-put-after
     fi
@@ -82,11 +67,11 @@ vi-put-before()
 {
     local cbuf
     if [[ $_clipcopy == '+' ]]; then
-        cbuf=$CUTBUFFER
+        cbuf="$CUTBUFFER"
         get-x-clipboard
         zle .vi-put-before
         unset _clipcopy
-        CUTBUFFER=$cbuf
+        CUTBUFFER="$cbuf"
     else
         zle .vi-put-before
     fi
@@ -330,10 +315,7 @@ zle -N vi-visual-backward-word
 vi-visual-change()
 {
     zle vi-visual-kill
-    if [[ $_clipcopy == '+' ]]; then
-        set-x-clipboard $CUTBUFFER
-        unset _clipcopy
-    fi
+    set-x-clipboard "$CUTBUFFER"
     zle vi-visual-exit-to-insert
 }
 zle -N vi-visual-change
@@ -342,10 +324,7 @@ zle -N vi-visual-change
 vi-visual-kill-and-vicmd()
 {
     zle vi-visual-kill
-    if [[ $_clipcopy == '+' ]]; then
-        set-x-clipboard $CUTBUFFER
-        unset _clipcopy
-    fi
+    set-x-clipboard "$CUTBUFFER"
     zle vi-visual-exit
 }
 zle -N vi-visual-kill-and-vicmd
@@ -421,11 +400,11 @@ vi-visual-put()
     (( CURSOR = CURSOR - 1 ))
     if [[ $_clipcopy == '+' ]]; then
         local cbuf
-        cbuf=$CUTBUFFER
+        cbuf="$CUTBUFFER"
         get-x-clipboard
         zle .vi-put-after
         unset _clipcopy
-        CUTBUFFER=$cbuf
+        CUTBUFFER="$cbuf"
     else
         zle -U 2 && zle .vi-set-buffer
         zle .vi-put-after
@@ -460,10 +439,10 @@ vi-visual-lowercase-region()
     LCEND=$__regend
 
     if [[ $__regstart == $__regend ]]; then
-        BUFFER[${LCSTART}]=${(L)BUFFER[${LCSTART}]}
+        BUFFER[${LCSTART}]="${(L)BUFFER[${LCSTART}]}"
         zle vi-visual-exit
     else
-        BUFFER[${LCSTART},${LCEND}]=${(L)BUFFER[${LCSTART},${LCEND}]}
+        BUFFER[${LCSTART},${LCEND}]="${(L)BUFFER[${LCSTART},${LCEND}]}"
         zle vi-visual-exit
     fi
 }
@@ -477,11 +456,11 @@ vi-visual-uppercase-region()
     LCEND=$__regend
 
     if [[ $__regstart == $__regend ]]; then
-        BUFFER[${LCSTART}]=${(U)BUFFER[${LCSTART}]}
+        BUFFER[${LCSTART}]="${(U)BUFFER[${LCSTART}]}"
         CURSOR=$__regstart
         zle vi-visual-exit
     else
-        BUFFER[${LCSTART},${LCEND}]=${(U)BUFFER[${LCSTART},${LCEND}]}
+        BUFFER[${LCSTART},${LCEND}]="${(U)BUFFER[${LCSTART},${LCEND}]}"
         CURSOR=$__regstart
         zle vi-visual-exit
     fi
@@ -498,7 +477,7 @@ vi-visual-replace-region()
 
     if [[ $__regstart == $__regend ]]; then
         read -k key
-        BUFFER[${LCSTART}]=$key
+        BUFFER[${LCSTART}]="$key"
         zle vi-visual-exit
     else
         read -k key
@@ -506,7 +485,7 @@ vi-visual-replace-region()
         while [[ $n -le ${LCEND} ]]
         do
             if [[ ! $BUFFER[$n] == $'\n' ]] && [[ -n $BUFFER[$n] ]]; then
-                BUFFER[$n]=${key}
+                BUFFER[$n]="$key"
             fi
             (( n++ ))
         done
@@ -531,14 +510,10 @@ vi-visual-yank()
         zle .vi-yank
         zle vi-visual-exit
     else
-        zle .copy-region-as-kill $BUFFER[${__regstart}+1,${__regend}]
+        zle .copy-region-as-kill "$BUFFER[${__regstart}+1,${__regend}]"
         zle vi-visual-exit
     fi
-
-    if [[ $_clipcopy == '+' ]]; then
-        set-x-clipboard $CUTBUFFER
-        unset _clipcopy
-    fi
+    set-x-clipboard "$CUTBUFFER"
 }
 zle -N vi-visual-yank
 
@@ -731,10 +706,7 @@ zle -N vi-vlines-kill
 vi-vlines-kill-and-vicmd()
 {
     zle vi-vlines-kill
-    if [[ $_clipcopy == '+' ]]; then
-        set-x-clipboard $CUTBUFFER
-        unset _clipcopy
-    fi
+    set-x-clipboard "$CUTBUFFER"
     zle vi-visual-exit
 }
 zle -N vi-vlines-kill-and-vicmd
@@ -756,11 +728,11 @@ vi-vlines-put()
     zle .kill-region
     if [[ $_clipcopy == '+' ]]; then
         local cbuf
-        cbuf=$CUTBUFFER
+        cbuf="$CUTBUFFER"
         get-x-clipboard
         zle .vi-put-after
         unset _clipcopy
-        CUTBUFFER=$cbuf
+        CUTBUFFER="$cbuf"
     else
         zle -U 2 && zle .vi-set-buffer
         zle .vi-put-after
