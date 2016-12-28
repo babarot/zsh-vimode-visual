@@ -13,8 +13,6 @@ get-x-clipboard()
         return 1
     fi
 
-    (( $+DISPLAY )) || return 1
-
     clipboard="$( ${=clippaste} )"
     if [[ -n $clipboard && $clipboard != $CUTBUFFER ]]; then
         killring=("$CUTBUFFER" "${(@)killring[1,-2]}")
@@ -33,7 +31,7 @@ set-x-clipboard()
         return 1
     fi
 
-    (( ! $+DISPLAY )) || printf -- "$@" | ${=clipcopy}
+    printf -- "$@" | ${=clipcopy}
 }
 
 vi-set-buffer()
