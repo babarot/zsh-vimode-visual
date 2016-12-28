@@ -1,6 +1,8 @@
 Zsh Vi mode Visual
 ===
 
+[![](https://img.shields.io/badge/powered%20by-zplug-ca7f85.svg?style=flat)](https://github.com/zplug/zplug)
+
 `zsh-vimode-visual` provides visual mode in [Zsh Line Editer](http://zsh.sourceforge.net/Doc/Release/Zsh-Line-Editor.html)
 
 ## Description
@@ -13,9 +15,19 @@ Zsh Vi mode Visual
 
 If you use [zplug](https://github.com/zplug/zplug) as Zsh plugin manager, all you have to do is to put something like this to your `.zshrc`.
 
-```bash
+```zsh
 zplug "b4b4r07/zsh-vimode-visual"
 ```
+
+Also ,if you want to use it without conflict with [`zsh-users/zsh-syntax-highlighting`](https://github.com/zsh-users/zsh-syntax-highlighting), please set as follows.
+
+```
+zplug "zsh-users/zsh-syntax-highlighting", defer:2
+zplug "b4b4r07/zsh-vimode-visual", defer:3
+```
+
+You can order the loading by setting the `defer` tag.
+In addition, if the `defer` tag is set to 2 or more, it's load after running `compinit`.
 
 Otherwise, to install manually:
 
