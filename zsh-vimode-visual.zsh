@@ -938,6 +938,9 @@ bindkey -M vivis 'u'  vi-visual-lowercase-region
 bindkey -M vivis 'v'  vi-visual-eol
 bindkey -M vivis 'w'  vi-visual-forward-word
 bindkey -M vivis 'y'  vi-visual-yank
+bindkey -M vivis 'X'  vi-visual-kill-and-vicmd
+bindkey -M vivis 'x'  vi-visual-kill-and-vicmd
+
 bindkey -M vivli 'D'  vi-vlines-kill-and-vicmd
 bindkey -M vivli 'G'  vi-vlines-goto-line
 bindkey -M vivli 'O'  vi-vlines-exchange-points
