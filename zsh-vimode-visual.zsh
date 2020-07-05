@@ -351,6 +351,22 @@ vi-visual-backward-char()
 }
 zle -N vi-visual-backward-char
 
+# Vi Visual move backward to word end
+vi-visual-backward-word-end()
+{
+    zle .vi-backward-word-end
+    zle vi-visual-highlight
+}
+zle -N vi-visual-backward-word-end
+
+# Vi Visual move backward to blank word end
+vi-visual-backward-blank-word-end()
+{
+    zle .vi-backward-blank-word-end
+    zle vi-visual-highlight
+}
+zle -N vi-visual-backward-blank-word-end
+
 # Vi Visual move down
 vi-visual-down-line()
 {
@@ -925,6 +941,8 @@ bindkey -M vivis 'd'  vi-visual-kill-and-vicmd
 bindkey -M vivis 'e'  vi-visual-forward-word-end
 bindkey -M vivis 'f'  vi-visual-find-next-char
 bindkey -M vivis 'gg' vi-visual-goto-first-line
+bindkey -M vivis 'ge' vi-visual-backward-word-end
+bindkey -M vivis 'gE' vi-visual-backward-blank-word-end
 bindkey -M vivis 'h'  vi-visual-backward-char
 bindkey -M vivis 'j'  vi-visual-down-line
 bindkey -M vivis 'jj' vi-visual-exit
